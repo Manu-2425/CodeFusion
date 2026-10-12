@@ -229,3 +229,87 @@ h1 {
   border-color: #f5b5b5;
   background: #fff7f7;
 }
+
+.form-card {
+  max-width: 560px;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #1d4ed8;
+}
+
+.field-invalid input,
+.field-invalid select {
+  border-color: #c53030;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #616e7c;
+  margin: 0.3rem 0 0;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #c53030;
+  margin: 0.3rem 0 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-size: 0.9rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2933;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button-primary {
+  background: #1f2933;
+  border-color: #1f2933;
+  color: #ffffff;
+}
+
+.button-danger {
+  color: #c53030;
+  border-color: #f5b5b5;
+}
