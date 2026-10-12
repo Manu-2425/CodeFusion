@@ -707,6 +707,48 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+
+/*
+ * GET /api/auth/me
+ * Return the currently authenticated user.
+ */
+app.get("/api/auth/me", async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT user_id, email, display_name
+       FROM users
+       WHERE user_id = $1`,
+      [req.session.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Session verification error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to verify session"
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
