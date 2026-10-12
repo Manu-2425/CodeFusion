@@ -4,6 +4,7 @@ import Notice from './components/Notice.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DeviceDetail from './pages/DeviceDetail.jsx'
 import DeviceForm from './pages/DeviceForm.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import SoftwareForm from './pages/SoftwareForm.jsx'
 
@@ -15,6 +16,7 @@ function App() {
         <Notice />
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/devices/new" element={<DeviceForm />} />
           <Route path="/devices/:deviceId" element={<DeviceDetail />} />
           <Route path="/devices/:deviceId/edit" element={<DeviceForm />} />

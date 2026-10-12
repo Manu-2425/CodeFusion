@@ -422,3 +422,53 @@ h1 {
   border: none;
   cursor: pointer;
 }
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.auth-tagline {
+  text-align: center;
+  font-size: 0.85rem;
+  margin: 0.25rem 0 1.25rem;
+}
+
+.auth-card h1 {
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.auth-google,
+.auth-submit {
+  width: 100%;
+}
+
+.auth-divider {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #7b8794;
+  margin: 1rem 0;
+}
+
+.auth-trust {
+  font-size: 0.8rem;
+  color: #52606d;
+  text-align: center;
+  margin: 1rem 0 0;
+}
