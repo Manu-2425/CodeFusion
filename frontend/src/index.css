@@ -472,3 +472,26 @@ h1 {
   text-align: center;
   margin: 1rem 0 0;
 }
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #e4e7eb;
+  margin-bottom: 1.25rem;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem;
+  font: inherit;
+  color: #7b8794;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.auth-tab.selected {
+  color: #1f2933;
+  font-weight: 600;
+  border-bottom-color: #1f2933;
+}
