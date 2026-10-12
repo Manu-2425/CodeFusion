@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { deleteDevice, getDevices, getRiskScore, getSoftware } from '../api.js'
+import {
+  deleteDevice,
+  deleteSoftware,
+  getDevices,
+  getRiskScore,
+  getSoftware
+} from '../api.js'
 import RiskBadge from '../components/RiskBadge.jsx'
 import SoftwareTable from '../components/SoftwareTable.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
@@ -33,6 +39,7 @@ function DeviceDetail() {
   const [device, setDevice] = useState(null)
   const [error, setError] = useState(null)
   const [actionError, setActionError] = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -68,7 +75,7 @@ function DeviceDetail() {
     return () => {
       active = false
     }
-  }, [deviceId])
+  }, [deviceId, reloadKey])
 
   // Removed devices are soft-deleted by the backend and purged later.
   async function handleRemoveDevice() {
@@ -81,6 +88,21 @@ function DeviceDetail() {
     try {
       await deleteDevice(deviceId)
       navigate('/')
+    } catch (err) {
+      setActionError(err.message)
+    }
+  }
+
+  // Reloads the page data so the device and overall scores update too.
+  async function handleRemoveSoftware(item) {
+    const confirmed = window.confirm(`Remove "${item.name}" from this device?`)
+
+    if (!confirmed) return
+
+    try {
+      await deleteSoftware(item.id)
+      setActionError(null)
+      setReloadKey(key => key + 1)
     } catch (err) {
       setActionError(err.message)
     }
@@ -140,7 +162,11 @@ function DeviceDetail() {
               </p>
 
               <h2>Installed software ({device.software.length})</h2>
-              <SoftwareTable deviceId={deviceId} software={device.software} />
+              <SoftwareTable
+                deviceId={deviceId}
+                software={device.software}
+                onRemove={handleRemoveSoftware}
+              />
             </section>
           </div>
         </>

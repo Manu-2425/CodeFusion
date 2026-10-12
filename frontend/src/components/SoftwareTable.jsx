@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import RiskBadge from './RiskBadge.jsx'
 
-function SoftwareTable({ deviceId, software }) {
+function SoftwareTable({ deviceId, software, onRemove }) {
   if (software.length === 0) {
     return <p className="muted">No programs added for this device yet.</p>
   }
@@ -33,6 +33,13 @@ function SoftwareTable({ deviceId, software }) {
             </td>
             <td className="row-actions">
               <Link to={`/devices/${deviceId}/software/${item.id}/edit`}>Edit</Link>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => onRemove(item)}
+              >
+                Remove
+              </button>
             </td>
           </tr>
         ))}
