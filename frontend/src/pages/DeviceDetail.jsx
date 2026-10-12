@@ -140,7 +140,7 @@ function DeviceDetail() {
               </p>
 
               <h2>Installed software ({device.software.length})</h2>
-              <SoftwareTable software={device.software} />
+              <SoftwareTable deviceId={deviceId} software={device.software} />
             </section>
           </div>
         </>

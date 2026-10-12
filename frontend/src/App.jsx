@@ -17,6 +17,10 @@ function App() {
           <Route path="/devices/:deviceId" element={<DeviceDetail />} />
           <Route path="/devices/:deviceId/edit" element={<DeviceForm />} />
           <Route path="/devices/:deviceId/software/new" element={<SoftwareForm />} />
+          <Route
+            path="/devices/:deviceId/software/:softwareId/edit"
+            element={<SoftwareForm />}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

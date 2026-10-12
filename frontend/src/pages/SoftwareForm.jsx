@@ -1,20 +1,60 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createSoftware } from '../api.js'
+import { createSoftware, getSoftware, updateSoftware } from '../api.js'
 import FormField from '../components/FormField.jsx'
+import StatusMessage from '../components/StatusMessage.jsx'
 import { validateSoftware } from '../validation.js'
 
 const EMPTY_SOFTWARE = { name: '', version: '', vendor: '' }
 
+// Used for both adding (/devices/:deviceId/software/new) and editing
+// (/devices/:deviceId/software/:softwareId/edit).
 function SoftwareForm() {
-  const { deviceId } = useParams()
+  const { deviceId, softwareId } = useParams()
+  const isEdit = Boolean(softwareId)
   const navigate = useNavigate()
   const [values, setValues] = useState(EMPTY_SOFTWARE)
+  const [loading, setLoading] = useState(isEdit)
+  const [loadError, setLoadError] = useState(null)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [serverError, setServerError] = useState(null)
 
   const devicePath = `/devices/${deviceId}`
+
+  useEffect(() => {
+    if (!isEdit) return
+
+    let active = true
+
+    getSoftware(deviceId)
+      .then(software => {
+        if (!active) return
+
+        const item = software.find(entry => entry.software_id === softwareId)
+
+        if (!item) {
+          setLoadError('This program may have been removed.')
+        } else {
+          setValues({
+            name: item.name,
+            version: item.version,
+            vendor: item.vendor ?? ''
+          })
+        }
+
+        setLoading(false)
+      })
+      .catch(err => {
+        if (!active) return
+        setLoadError(err.message)
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [deviceId, softwareId, isEdit])
 
   function setField(field, value) {
     setValues(current => ({ ...current, [field]: value }))
@@ -34,11 +74,18 @@ function SoftwareForm() {
     setServerError(null)
 
     try {
-      await createSoftware(deviceId, {
+      const fields = {
         name: values.name.trim(),
         version: values.version.trim(),
         vendor: values.vendor.trim() || undefined
-      })
+      }
+
+      if (isEdit) {
+        await updateSoftware(softwareId, fields)
+      } else {
+        await createSoftware(deviceId, fields)
+      }
+
       navigate(devicePath)
     } catch (err) {
       setServerError(err.message)
@@ -46,13 +93,30 @@ function SoftwareForm() {
     }
   }
 
+  if (loading) {
+    return <StatusMessage title="Loading software…" />
+  }
+
+  if (loadError) {
+    return (
+      <StatusMessage title="Couldn't load this program" tone="error">
+        {loadError}
+      </StatusMessage>
+    )
+  }
+
   return (
     <>
       <p className="breadcrumb">
-        <Link to="/">Dashboard</Link> › <Link to={devicePath}>Device</Link> › Add software
+        <Link to="/">Dashboard</Link> › <Link to={devicePath}>Device</Link> ›{' '}
+        {isEdit ? 'Edit software' : 'Add software'}
       </p>
-      <h1>Add software</h1>
-      <p className="muted">Add a program installed on this device.</p>
+      <h1>{isEdit ? 'Edit software' : 'Add software'}</h1>
+      <p className="muted">
+        {isEdit
+          ? 'Correct the name or version of this program.'
+          : 'Add a program installed on this device.'}
+      </p>
 
       <form className="card form-card" onSubmit={handleSubmit} noValidate>
         <FormField id="software-name" error={errors.name} label="Software name">
@@ -97,7 +161,7 @@ function SoftwareForm() {
         </FormField>
 
         <p className="form-note">
-          New programs are saved as <strong>unverified</strong> and show as
+          {isEdit ? 'Edited' : 'New'} programs are saved as <strong>unverified</strong> and show as
           &ldquo;Can&apos;t check&rdquo; until they can be matched to
           vulnerability data.
         </p>
@@ -107,7 +171,7 @@ function SoftwareForm() {
         <div className="form-actions">
           <Link to={devicePath} className="button">Cancel</Link>
           <button type="submit" className="button button-primary" disabled={saving}>
-            {saving ? 'Saving…' : 'Add software'}
+            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add software'}
           </button>
         </div>
       </form>
