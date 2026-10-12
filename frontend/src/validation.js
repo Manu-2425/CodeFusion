@@ -22,3 +22,14 @@ export function validateDevice(values) {
 
   return errors
 }
+
+// Limits from the software table and the software API checks.
+export function validateSoftware(values) {
+  const errors = {}
+
+  checkText(errors, 'name', values.name, 'Software name', 150)
+  checkText(errors, 'version', values.version, 'Version', 100)
+  checkText(errors, 'vendor', values.vendor, 'Vendor', 150, false)
+
+  return errors
+}
