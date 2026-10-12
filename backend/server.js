@@ -460,6 +460,61 @@ app.put("/api/software/:id", async (req, res) => {
   }
 });
 
+
+/*
+ * DELETE /api/software/:id
+ * Development-only: soft-delete software belonging
+ * to the local test user's device.
+ */
+app.delete("/api/software/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `UPDATE software AS s
+       SET deleted_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       FROM devices AS d
+       JOIN users AS u ON d.user_id = u.user_id
+       WHERE s.software_id = $1
+         AND s.device_id = d.device_id
+         AND u.email = $2
+         AND s.deleted_at IS NULL
+         AND d.deleted_at IS NULL
+       RETURNING s.software_id, s.name`,
+      [id, "testuser@cyberbuddy.local"]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Software not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Software removed successfully",
+      software: result.rows[0]
+    });
+
+  } catch (error) {
+    if (error.code === "22P02") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid software ID"
+      });
+    }
+
+    console.error("Error removing software:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to remove software"
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
