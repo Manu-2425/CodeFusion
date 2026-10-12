@@ -622,6 +622,91 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+
+/*
+ * POST /api/auth/login
+ * Authenticate a user and create a session.
+ */
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const result = await pool.query(
+      `SELECT user_id, email, display_name, password_hash
+       FROM users
+       WHERE email = $1 AND auth_provider = 'email'`,
+      [cleanEmail]
+    );
+
+    const user = result.rows[0];
+
+    if (
+      !user ||
+      !user.password_hash ||
+      !(await bcrypt.compare(password, user.password_hash))
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    req.session.regenerate((error) => {
+      if (error) {
+        console.error("Session error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Unable to create login session"
+        });
+      }
+
+      req.session.userId = user.user_id;
+
+      req.session.save((error) => {
+        if (error) {
+          console.error("Session save error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Unable to save login session"
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Login successful",
+          user: {
+            user_id: user.user_id,
+            email: user.email,
+            display_name: user.display_name
+          }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to log in"
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
