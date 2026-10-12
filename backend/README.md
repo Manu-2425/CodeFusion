@@ -73,3 +73,54 @@ are not yet implemented.
 ## Security
 
 Do not commit .env files, passwords, or node_modules to GitHub.
+
+## Software Management APIs
+
+The backend supports managing installed software
+associated with a device.
+
+POST   /api/devices/:deviceId/software
+GET    /api/devices/:deviceId/software
+PUT    /api/software/:id
+DELETE /api/software/:id
+
+Features:
+- Add installed software to an existing device
+- Retrieve software associated with a device
+- Update software name, version, and vendor
+- Soft-delete software without immediately removing its record
+- Validate required fields and device/software identifiers
+
+## Automated API Testing
+
+The backend includes six automated API tests
+using Node.js's built-in test runner.
+
+Before running tests:
+1. Start PostgreSQL.
+2. Configure the local .env file.
+3. Create the cyberbuddy database using schema.sql.
+4. Create the development-only test user.
+5. Start the Express backend.
+
+Run tests in a separate terminal:
+
+    node --test tests/api.test.js
+
+The tests cover:
+- Health-check endpoint
+- Device retrieval
+- Missing device fields
+- Invalid device ID
+- Missing software version
+- Unknown device software retrieval
+
+All six tests passed during local development.
+
+## Development Limitations
+
+Authentication is not yet implemented.
+Some endpoints currently use a fixed development test account.
+The GET Devices endpoint is not yet restricted by user.
+
+These limitations must be resolved before public deployment.
