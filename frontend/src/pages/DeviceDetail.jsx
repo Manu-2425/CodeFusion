@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getDevices, getRiskScore, getSoftware } from '../api.js'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { deleteDevice, getDevices, getRiskScore, getSoftware } from '../api.js'
 import RiskBadge from '../components/RiskBadge.jsx'
 import SoftwareTable from '../components/SoftwareTable.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
@@ -29,8 +29,10 @@ function mergeSoftware(software, scoredDevice) {
 
 function DeviceDetail() {
   const { deviceId } = useParams()
+  const navigate = useNavigate()
   const [device, setDevice] = useState(null)
   const [error, setError] = useState(null)
+  const [actionError, setActionError] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -68,6 +70,22 @@ function DeviceDetail() {
     }
   }, [deviceId])
 
+  // Removed devices are soft-deleted by the backend and purged later.
+  async function handleRemoveDevice() {
+    const confirmed = window.confirm(
+      `Remove "${device.name}" and its software from your inventory?`
+    )
+
+    if (!confirmed) return
+
+    try {
+      await deleteDevice(deviceId)
+      navigate('/')
+    } catch (err) {
+      setActionError(err.message)
+    }
+  }
+
   return (
     <>
       <p className="breadcrumb">
@@ -83,9 +101,21 @@ function DeviceDetail() {
       {!error && !device && <StatusMessage title="Loading device…" />}
       {device && (
         <>
-          <h1>
-            {device.name} <span className="muted heading-note">{device.type}</span>
-          </h1>
+          <div className="page-header">
+            <h1>
+              {device.name} <span className="muted heading-note">{device.type}</span>
+            </h1>
+            <div className="page-actions">
+              <button
+                type="button"
+                className="button button-danger"
+                onClick={handleRemoveDevice}
+              >
+                Remove device
+              </button>
+            </div>
+          </div>
+          {actionError && <p className="field-error">{actionError}</p>}
           <div className="dashboard-grid">
             <section className="card score-card">
               <h2>Device risk</h2>
