@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/authContext.js'
 import FormField from '../components/FormField.jsx'
+import StatusMessage from '../components/StatusMessage.jsx'
 import { validateLogin, validateSignUp } from '../validation.js'
 
 const EMPTY_FORM = { displayName: '', email: '', password: '', confirmPassword: '' }
@@ -11,7 +12,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isSignUp = searchParams.get('mode') === 'signup'
-  const { signIn, signUp } = useAuth()
+  const { user, checking, signIn, signUp } = useAuth()
   const [values, setValues] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -54,6 +55,18 @@ function LoginPage() {
       setServerError(err.message)
       setSubmitting(false)
     }
+  }
+
+  if (checking) {
+    return <StatusMessage title="Checking your session…" />
+  }
+
+  if (user && !submitting) {
+    return (
+      <StatusMessage title={`You're logged in as ${user.display_name}`}>
+        <Link to="/">Go to your dashboard</Link>
+      </StatusMessage>
+    )
   }
 
   return (
