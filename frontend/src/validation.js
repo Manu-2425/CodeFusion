@@ -33,3 +33,47 @@ export function validateSoftware(values) {
 
   return errors
 }
+
+// Same email pattern as POST /api/auth/register.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export function validateLogin(values) {
+  const errors = {}
+
+  if (!values.email.trim()) {
+    errors.email = 'Email is required.'
+  }
+
+  if (!values.password) {
+    errors.password = 'Password is required.'
+  }
+
+  return errors
+}
+
+// Password rules match the backend: at least 12 characters and at most
+// 72 bytes, the most bcrypt can use.
+export function validateSignUp(values) {
+  const errors = {}
+  const email = values.email.trim()
+
+  checkText(errors, 'displayName', values.displayName, 'Your name', 100)
+
+  if (!email) {
+    errors.email = 'Email is required.'
+  } else if (email.length > 255 || !EMAIL_PATTERN.test(email)) {
+    errors.email = 'Enter a valid email address, like you@example.com.'
+  }
+
+  if (values.password.length < 12) {
+    errors.password = 'Password must be at least 12 characters.'
+  } else if (new TextEncoder().encode(values.password).length > 72) {
+    errors.password = 'Password is too long. Use 72 bytes or fewer.'
+  }
+
+  if (values.confirmPassword !== values.password) {
+    errors.confirmPassword = 'Passwords do not match.'
+  }
+
+  return errors
+}

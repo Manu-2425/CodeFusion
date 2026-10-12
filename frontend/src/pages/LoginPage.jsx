@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/authContext.js'
 import FormField from '../components/FormField.jsx'
+import { validateLogin, validateSignUp } from '../validation.js'
 
 const EMPTY_FORM = { displayName: '', email: '', password: '', confirmPassword: '' }
 
@@ -12,6 +13,7 @@ function LoginPage() {
   const isSignUp = searchParams.get('mode') === 'signup'
   const { signIn, signUp } = useAuth()
   const [values, setValues] = useState(EMPTY_FORM)
+  const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState(null)
 
@@ -21,11 +23,20 @@ function LoginPage() {
 
   function switchMode(signUpMode) {
     setSearchParams(signUpMode ? { mode: 'signup' } : {})
+    setErrors({})
     setServerError(null)
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+
+    const found = isSignUp ? validateSignUp(values) : validateLogin(values)
+    setErrors(found)
+
+    if (Object.keys(found).length > 0) {
+      return
+    }
+
     setSubmitting(true)
     setServerError(null)
 
@@ -79,11 +90,13 @@ function LoginPage() {
         </button>
         <p className="auth-divider">or use email</p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           {isSignUp && (
-            <FormField id="display-name" label="Your name">
+            <FormField id="display-name" error={errors.displayName} label="Your name">
               <input
                 id="display-name"
+                aria-invalid={Boolean(errors.displayName)}
+                aria-describedby={errors.displayName ? 'display-name-error' : undefined}
                 autoComplete="name"
                 value={values.displayName}
                 onChange={event => setField('displayName', event.target.value)}
@@ -91,9 +104,11 @@ function LoginPage() {
             </FormField>
           )}
 
-          <FormField id="email" label="Email">
+          <FormField id="email" error={errors.email} label="Email">
             <input
               id="email"
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               type="email"
               autoComplete="email"
               value={values.email}
@@ -104,11 +119,14 @@ function LoginPage() {
 
           <FormField
             id="password"
+            error={errors.password}
             label="Password"
             hint={isSignUp ? 'At least 12 characters.' : undefined}
           >
             <input
               id="password"
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? 'password-error' : undefined}
               type="password"
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
               value={values.password}
@@ -117,9 +135,15 @@ function LoginPage() {
           </FormField>
 
           {isSignUp && (
-            <FormField id="confirm-password" label="Confirm password">
+            <FormField
+              id="confirm-password"
+              error={errors.confirmPassword}
+              label="Confirm password"
+            >
               <input
                 id="confirm-password"
+                aria-invalid={Boolean(errors.confirmPassword)}
+                aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
                 type="password"
                 autoComplete="new-password"
                 value={values.confirmPassword}
