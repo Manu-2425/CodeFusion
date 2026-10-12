@@ -86,7 +86,9 @@ function SoftwareForm() {
         await createSoftware(deviceId, fields)
       }
 
-      navigate(devicePath)
+      navigate(devicePath, {
+        state: { notice: isEdit ? 'Software updated.' : 'Software added.' }
+      })
     } catch (err) {
       setServerError(err.message)
       setSaving(false)

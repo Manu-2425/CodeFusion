@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import NavBar from './components/NavBar.jsx'
+import Notice from './components/Notice.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DeviceDetail from './pages/DeviceDetail.jsx'
 import DeviceForm from './pages/DeviceForm.jsx'
@@ -11,6 +12,7 @@ function App() {
     <>
       <NavBar />
       <main className="page">
+        <Notice />
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/devices/new" element={<DeviceForm />} />

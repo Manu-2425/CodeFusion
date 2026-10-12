@@ -90,7 +90,9 @@ function DeviceForm() {
         ? await updateDevice(deviceId, fields)
         : await createDevice(fields)
 
-      navigate(`/devices/${device.device_id}`)
+      navigate(`/devices/${device.device_id}`, {
+        state: { notice: isEdit ? 'Device updated.' : 'Device added.' }
+      })
     } catch (err) {
       setServerError(err.message)
       setSaving(false)

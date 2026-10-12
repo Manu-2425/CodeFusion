@@ -87,7 +87,7 @@ function DeviceDetail() {
 
     try {
       await deleteDevice(deviceId)
-      navigate('/')
+      navigate('/', { state: { notice: `"${device.name}" was removed.` } })
     } catch (err) {
       setActionError(err.message)
     }
@@ -103,6 +103,10 @@ function DeviceDetail() {
       await deleteSoftware(item.id)
       setActionError(null)
       setReloadKey(key => key + 1)
+      navigate(`/devices/${deviceId}`, {
+        replace: true,
+        state: { notice: `"${item.name}" was removed.` }
+      })
     } catch (err) {
       setActionError(err.message)
     }
