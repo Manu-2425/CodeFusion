@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createDevice } from '../api.js'
 import FormField from '../components/FormField.jsx'
+import { OPERATING_SYSTEMS, versionHelpFor } from '../deviceOptions.js'
 
 const DEVICE_TYPES = ['Laptop/Desktop', 'Phone', 'Tablet']
 
@@ -72,15 +73,25 @@ function DeviceForm() {
         </div>
 
         <FormField id="os_name" label="Operating system">
-          <input
+          <select
             id="os_name"
             value={values.os_name}
             onChange={event => setField('os_name', event.target.value)}
-            placeholder="e.g. Windows"
-          />
+          >
+            <option value="">Choose an operating system</option>
+            {OPERATING_SYSTEMS.map(os => (
+              <option key={os.name} value={os.name}>
+                {os.name}
+              </option>
+            ))}
+          </select>
         </FormField>
 
-        <FormField id="os_version" label="Operating system version">
+        <FormField
+          id="os_version"
+          label="Operating system version"
+          hint={values.os_name && `Not sure? ${versionHelpFor(values.os_name)}`}
+        >
           <input
             id="os_version"
             value={values.os_version}
