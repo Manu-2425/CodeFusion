@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getDevices, getRiskScore } from '../api.js'
 import InventoryTable from '../components/InventoryTable.jsx'
 import RiskScoreCard from '../components/RiskScoreCard.jsx'
@@ -60,7 +61,8 @@ function Dashboard() {
   } else if (inventory.length === 0) {
     content = (
       <StatusMessage title="No devices yet">
-        Add your first device to see your risk score.
+        Add your first device to see your risk score.{' '}
+        <Link to="/devices/new">Add a device</Link>
       </StatusMessage>
     )
   } else {

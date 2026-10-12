@@ -11,6 +11,7 @@ function NavBar() {
         <NavLink to="/" end>
           Dashboard
         </NavLink>
+        <NavLink to="/devices/new">Add device</NavLink>
       </nav>
     </header>
   )

@@ -128,6 +128,9 @@ function DeviceDetail() {
               {device.name} <span className="muted heading-note">{device.type}</span>
             </h1>
             <div className="page-actions">
+              <Link to={`/devices/${deviceId}/edit`} className="button">
+                Edit
+              </Link>
               <button
                 type="button"
                 className="button button-danger"
@@ -161,7 +164,12 @@ function DeviceDetail() {
                 />
               </p>
 
-              <h2>Installed software ({device.software.length})</h2>
+              <div className="section-header">
+                <h2>Installed software ({device.software.length})</h2>
+                <Link to={`/devices/${deviceId}/software/new`} className="button">
+                  + Add software
+                </Link>
+              </div>
               <SoftwareTable
                 deviceId={deviceId}
                 software={device.software}

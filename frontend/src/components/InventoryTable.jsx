@@ -4,7 +4,10 @@ import RiskBadge from './RiskBadge.jsx'
 function InventoryTable({ devices }) {
   return (
     <section className="card">
-      <h2>Your inventory</h2>
+      <div className="section-header">
+        <h2>Your inventory</h2>
+        <Link to="/devices/new" className="button">+ Add device</Link>
+      </div>
       <table className="table">
         <thead>
           <tr>
