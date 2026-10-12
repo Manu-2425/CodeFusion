@@ -749,6 +749,43 @@ app.get("/api/auth/me", async (req, res) => {
   }
 });
 
+
+/*
+ * POST /api/auth/logout
+ * Destroy the user's authenticated session.
+ */
+app.post("/api/auth/logout", (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Not authenticated"
+    });
+  }
+
+  req.session.destroy((error) => {
+    if (error) {
+      console.error("Logout error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to log out"
+      });
+    }
+
+    res.clearCookie("cyberbuddy.sid", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/"
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successful"
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
