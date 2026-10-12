@@ -14,6 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/devices/new" element={<DeviceForm />} />
           <Route path="/devices/:deviceId" element={<DeviceDetail />} />
+          <Route path="/devices/:deviceId/edit" element={<DeviceForm />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

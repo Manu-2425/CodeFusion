@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { createDevice } from '../api.js'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { createDevice, getDevices, updateDevice } from '../api.js'
 import FormField from '../components/FormField.jsx'
+import StatusMessage from '../components/StatusMessage.jsx'
 import { OPERATING_SYSTEMS, versionHelpFor } from '../deviceOptions.js'
 import { validateDevice } from '../validation.js'
 
@@ -14,12 +15,52 @@ const EMPTY_DEVICE = {
   os_version: ''
 }
 
+// Used for both adding (/devices/new) and editing (/devices/:deviceId/edit).
 function DeviceForm() {
+  const { deviceId } = useParams()
+  const isEdit = Boolean(deviceId)
   const navigate = useNavigate()
   const [values, setValues] = useState(EMPTY_DEVICE)
+  const [loading, setLoading] = useState(isEdit)
+  const [loadError, setLoadError] = useState(null)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [serverError, setServerError] = useState(null)
+
+  useEffect(() => {
+    if (!isEdit) return
+
+    let active = true
+
+    getDevices()
+      .then(devices => {
+        if (!active) return
+
+        const device = devices.find(item => item.device_id === deviceId)
+
+        if (!device) {
+          setLoadError('This device may have been removed.')
+        } else {
+          setValues({
+            name: device.name,
+            device_type: device.device_type,
+            os_name: device.os_name,
+            os_version: device.os_version
+          })
+        }
+
+        setLoading(false)
+      })
+      .catch(err => {
+        if (!active) return
+        setLoadError(err.message)
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [deviceId, isEdit])
 
   function setField(field, value) {
     setValues(current => ({ ...current, [field]: value }))
@@ -39,12 +80,16 @@ function DeviceForm() {
     setServerError(null)
 
     try {
-      const device = await createDevice({
+      const fields = {
         name: values.name.trim(),
         device_type: values.device_type,
         os_name: values.os_name,
         os_version: values.os_version.trim()
-      })
+      }
+      const device = isEdit
+        ? await updateDevice(deviceId, fields)
+        : await createDevice(fields)
+
       navigate(`/devices/${device.device_id}`)
     } catch (err) {
       setServerError(err.message)
@@ -52,13 +97,41 @@ function DeviceForm() {
     }
   }
 
+  const cancelPath = isEdit ? `/devices/${deviceId}` : '/'
+
+  // Keep a saved type or OS selectable even if it is not in the lists.
+  const deviceTypes = DEVICE_TYPES.includes(values.device_type)
+    ? DEVICE_TYPES
+    : [...DEVICE_TYPES, values.device_type]
+  const osNames = OPERATING_SYSTEMS.map(os => os.name)
+
+  if (!osNames.includes(values.os_name) && values.os_name) {
+    osNames.push(values.os_name)
+  }
+
+  if (loading) {
+    return <StatusMessage title="Loading device…" />
+  }
+
+  if (loadError) {
+    return (
+      <StatusMessage title="Couldn't load this device" tone="error">
+        {loadError}
+      </StatusMessage>
+    )
+  }
+
   return (
     <>
       <p className="breadcrumb">
-        <Link to="/">Dashboard</Link> › Add device
+        <Link to="/">Dashboard</Link> › {isEdit ? 'Edit device' : 'Add device'}
       </p>
-      <h1>Add a device</h1>
-      <p className="muted">Tell us about a computer, phone, or tablet you use.</p>
+      <h1>{isEdit ? 'Edit device' : 'Add a device'}</h1>
+      <p className="muted">
+        {isEdit
+          ? 'Correct the details of this device.'
+          : 'Tell us about a computer, phone, or tablet you use.'}
+      </p>
 
       <form className="card form-card" onSubmit={handleSubmit} noValidate>
         <FormField id="name" error={errors.name} label="Device name">
@@ -76,7 +149,7 @@ function DeviceForm() {
         <div className="field">
           <span className="field-label" id="device-type-label">Device type</span>
           <div className="choice-buttons" role="group" aria-labelledby="device-type-label">
-            {DEVICE_TYPES.map(type => (
+            {deviceTypes.map(type => (
               <button
                 key={type}
                 type="button"
@@ -99,9 +172,9 @@ function DeviceForm() {
             onChange={event => setField('os_name', event.target.value)}
           >
             <option value="">Choose an operating system</option>
-            {OPERATING_SYSTEMS.map(os => (
-              <option key={os.name} value={os.name}>
-                {os.name}
+            {osNames.map(name => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
@@ -127,7 +200,7 @@ function DeviceForm() {
         {serverError && <p className="field-error">{serverError}</p>}
 
         <div className="form-actions">
-          <Link to="/" className="button">Cancel</Link>
+          <Link to={cancelPath} className="button">Cancel</Link>
           <button type="submit" className="button button-primary" disabled={saving}>
             {saving ? 'Saving…' : 'Save device'}
           </button>
