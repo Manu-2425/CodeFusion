@@ -154,3 +154,45 @@ h1 {
   color: #7b8794;
   margin: 0;
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-card {
+    max-width: none;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #7b8794;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e4e7eb;
+}
+
+.table td {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
