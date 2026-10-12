@@ -354,3 +354,12 @@ h1 {
   display: flex;
   gap: 0.5rem;
 }
+
+.form-note {
+  font-size: 0.85rem;
+  color: #52606d;
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0;
+}
