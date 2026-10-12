@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
+const { getRiskReport } = require("./services/riskReport");
 require("dotenv").config();
 
 const app = express();
@@ -511,6 +512,30 @@ app.delete("/api/software/:id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to remove software"
+    });
+  }
+});
+
+/*
+ * GET /api/risk-score
+ * Development-only: risk report for the local test user's
+ * inventory. Read-only; scores are not saved yet.
+ */
+app.get("/api/risk-score", async (req, res) => {
+  try {
+    const report = await getRiskReport(pool, "testuser@cyberbuddy.local");
+
+    return res.status(200).json({
+      success: true,
+      ...report
+    });
+
+  } catch (error) {
+    console.error("Error calculating risk score:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to calculate risk score"
     });
   }
 });
