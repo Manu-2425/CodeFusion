@@ -1,13 +1,12 @@
 // All calls to the Cyber Buddy backend go through this file.
-// The backend address comes from VITE_API_URL in frontend/.env.
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
+// Requests use relative /api paths; the Vite dev server forwards them
+// to the backend set by BACKEND_URL in frontend/.env.
 
 async function request(path, { method = 'GET', body } = {}) {
   let response
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(path, {
       method,
       headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined
