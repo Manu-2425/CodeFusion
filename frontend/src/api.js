@@ -18,7 +18,9 @@ async function request(path, { method = 'GET', body } = {}) {
   const data = await response.json().catch(() => null)
 
   if (!response.ok || !data?.success) {
-    throw new Error(data?.message || `Request failed (${response.status})`)
+    const error = new Error(data?.message || `Request failed (${response.status})`)
+    error.status = response.status
+    throw error
   }
 
   return data
@@ -79,4 +81,37 @@ export async function updateSoftware(softwareId, fields) {
 
 export function deleteSoftware(softwareId) {
   return request(`/api/software/${encodeURIComponent(softwareId)}`, { method: 'DELETE' })
+}
+
+// Account and session (cookie-based; see backend /api/auth routes).
+
+export async function register({ displayName, email, password }) {
+  const data = await request('/api/auth/register', {
+    method: 'POST',
+    body: { display_name: displayName, email, password }
+  })
+  return data.user
+}
+
+export async function login({ email, password }) {
+  const data = await request('/api/auth/login', {
+    method: 'POST',
+    body: { email, password }
+  })
+  return data.user
+}
+
+// Returns the logged-in user, or null when nobody is logged in.
+export async function getCurrentUser() {
+  try {
+    const data = await request('/api/auth/me')
+    return data.user
+  } catch (err) {
+    if (err.status === 401) return null
+    throw err
+  }
+}
+
+export function logout() {
+  return request('/api/auth/logout', { method: 'POST' })
 }
