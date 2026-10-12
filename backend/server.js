@@ -1,4 +1,3 @@
-
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
@@ -246,6 +245,76 @@ app.delete("/api/devices/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Unable to remove device"
+    });
+  }
+});
+
+
+/*
+ * POST /api/devices/:deviceId/software
+ * Development-only Add Software API
+ */
+app.post("/api/devices/:deviceId/software", async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const { name, version, vendor } = req.body;
+
+    if (
+      typeof name !== "string" || !name.trim() ||
+      typeof version !== "string" || !version.trim() ||
+      (vendor !== undefined &&
+        (typeof vendor !== "string" || vendor.length > 150))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid software name and version are required"
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO software (device_id, name, version, vendor)
+       SELECT d.device_id, $2, $3, $4
+       FROM devices d
+       JOIN users u ON u.user_id = d.user_id
+       WHERE d.device_id = $1
+         AND u.email = $5
+         AND d.deleted_at IS NULL
+       RETURNING *`,
+      [
+        deviceId,
+        name.trim(),
+        version.trim(),
+        vendor?.trim() || null,
+        "testuser@cyberbuddy.local"
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Device not found"
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Software added successfully",
+      software: result.rows[0]
+    });
+
+  } catch (error) {
+    if (error.code === "22P02") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid device ID"
+      });
+    }
+
+    console.error("Error adding software:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to add software"
     });
   }
 });
