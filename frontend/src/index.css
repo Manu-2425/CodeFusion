@@ -79,3 +79,78 @@ h1 {
   color: #616e7c;
   margin: 0 0 0.25rem;
 }
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e4e7eb;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.card h2 {
+  font-size: 1rem;
+  margin: 0 0 1rem;
+}
+
+.risk-low { --risk-color: #2f855a; --risk-bg: #e6f4ea; }
+.risk-moderate { --risk-color: #a16207; --risk-bg: #fef6dc; }
+.risk-high { --risk-color: #c05621; --risk-bg: #fdecdf; }
+.risk-critical { --risk-color: #c53030; --risk-bg: #fde8e8; }
+.risk-unknown { --risk-color: #7b8794; --risk-bg: #eef1f4; }
+
+.risk-badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--risk-color);
+  border-radius: 999px;
+  color: var(--risk-color);
+  background: var(--risk-bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.score-card {
+  max-width: 320px;
+  text-align: center;
+}
+
+.score-ring {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--risk-color) calc(var(--score) * 1%),
+    #e4e7eb 0
+  );
+  display: grid;
+  place-items: center;
+}
+
+.score-ring-inner {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.score-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-note {
+  font-size: 0.85rem;
+}
+
+.score-scale {
+  font-size: 0.75rem;
+  color: #7b8794;
+  margin: 0;
+}
