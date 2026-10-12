@@ -495,3 +495,11 @@ h1 {
   font-weight: 600;
   border-bottom-color: #1f2933;
 }
+
+.navbar-account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  font-size: 0.9rem;
+}
