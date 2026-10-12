@@ -59,3 +59,25 @@ export async function getSoftware(deviceId) {
   const data = await request(`/api/devices/${encodeURIComponent(deviceId)}/software`)
   return data.software
 }
+
+// Fields: name, version, vendor (optional).
+export async function createSoftware(deviceId, fields) {
+  const data = await request(`/api/devices/${encodeURIComponent(deviceId)}/software`, {
+    method: 'POST',
+    body: fields
+  })
+  return data.software
+}
+
+// Editing resets the program to unverified until it is checked again.
+export async function updateSoftware(softwareId, fields) {
+  const data = await request(`/api/software/${encodeURIComponent(softwareId)}`, {
+    method: 'PUT',
+    body: fields
+  })
+  return data.software
+}
+
+export function deleteSoftware(softwareId) {
+  return request(`/api/software/${encodeURIComponent(softwareId)}`, { method: 'DELETE' })
+}
