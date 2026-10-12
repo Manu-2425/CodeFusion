@@ -379,6 +379,87 @@ app.get("/api/devices/:deviceId/software", async (req, res) => {
   }
 });
 
+
+/*
+ * PUT /api/software/:id
+ * Development-only: update software owned
+ * by the local test user's device.
+ */
+app.put("/api/software/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, version, vendor } = req.body;
+
+    if (
+      typeof name !== "string" || !name.trim() ||
+      name.length > 150 ||
+      typeof version !== "string" || !version.trim() ||
+      version.length > 100 ||
+      (vendor != null &&
+        (typeof vendor !== "string" || vendor.length > 150))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid software name and version are required"
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE software AS s
+       SET name = $1,
+           version = $2,
+           vendor = $3,
+           match_status = 'unverified',
+           cpe_name = NULL,
+           risk_score = NULL,
+           updated_at = CURRENT_TIMESTAMP
+       FROM devices AS d
+       JOIN users AS u ON d.user_id = u.user_id
+       WHERE s.software_id = $4
+         AND s.device_id = d.device_id
+         AND u.email = $5
+         AND s.deleted_at IS NULL
+         AND d.deleted_at IS NULL
+       RETURNING s.*`,
+      [
+        name.trim(),
+        version.trim(),
+        vendor?.trim() || null,
+        id,
+        "testuser@cyberbuddy.local"
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Software not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Software updated successfully",
+      software: result.rows[0]
+    });
+
+  } catch (error) {
+    if (error.code === "22P02") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid software ID"
+      });
+    }
+
+    console.error("Error updating software:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update software"
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
