@@ -3,12 +3,41 @@ const cors = require("cors");
 const pool = require("./db");
 require("dotenv").config();
 
+const session = require("express-session");
+const PgSession = require("connect-pg-simple")(session);
+const bcrypt = require("bcrypt");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is missing from .env");
+}
+
+app.use(
+  session({
+    store: new PgSession({
+      pool: pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true
+    }),
+    name: "cyberbuddy.sid",
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    rolling: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000
+    }
+  })
+);
 
 // Home route
 app.get("/", (req, res) => {
@@ -511,6 +540,84 @@ app.delete("/api/software/:id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to remove software"
+    });
+  }
+});
+
+
+/*
+ * POST /api/auth/register
+ * Create a Cyber Buddy account securely.
+ */
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { email, password, display_name } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      typeof display_name !== "string" ||
+      !email.trim() ||
+      !display_name.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, password and name are required"
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (
+      cleanEmail.length > 255 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) ||
+      display_name.trim().length > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or display name"
+      });
+    }
+
+    if (
+      password.length < 12 ||
+      Buffer.byteLength(password, "utf8") > 72
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 12 characters and at most 72 UTF-8 bytes"
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const result = await pool.query(
+      `INSERT INTO users
+         (email, display_name, auth_provider, password_hash)
+       VALUES ($1, $2, 'email', $3)
+       RETURNING user_id, email, display_name, created_at`,
+      [cleanEmail, display_name.trim(), passwordHash]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      user: result.rows[0]
+    });
+
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists"
+      });
+    }
+
+    console.error("Registration error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create account"
     });
   }
 });
