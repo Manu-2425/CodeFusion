@@ -313,3 +313,31 @@ h1 {
   color: #c53030;
   border-color: #f5b5b5;
 }
+
+.field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.choice-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice-button {
+  padding: 0.6rem 1.1rem;
+  font: inherit;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.choice-button.selected {
+  background: #1f2933;
+  border-color: #1f2933;
+  color: #ffffff;
+}
