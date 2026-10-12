@@ -1,6 +1,10 @@
 import RiskBadge from './RiskBadge.jsx'
 
 function SoftwareTable({ software }) {
+  if (software.length === 0) {
+    return <p className="muted">No programs added for this device yet.</p>
+  }
+
   return (
     <table className="table">
       <thead>

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getDevices, getRiskScore, getSoftware } from '../api.js'
 import RiskBadge from '../components/RiskBadge.jsx'
 import SoftwareTable from '../components/SoftwareTable.jsx'
+import StatusMessage from '../components/StatusMessage.jsx'
 import { formatScore, riskClass } from '../risk.js'
 
 // Software versions come from /api/devices/:id/software and
@@ -29,12 +30,24 @@ function mergeSoftware(software, scoredDevice) {
 function DeviceDetail() {
   const { deviceId } = useParams()
   const [device, setDevice] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    Promise.all([getDevices(), getRiskScore(), getSoftware(deviceId)]).then(
-      ([devices, report, software]) => {
+    let active = true
+    setDevice(null)
+    setError(null)
+
+    Promise.all([getDevices(), getRiskScore(), getSoftware(deviceId)])
+      .then(([devices, report, software]) => {
+        if (!active) return
+
         const info = devices.find(item => item.device_id === deviceId)
         const scored = report.devices.find(item => item.id === deviceId)
+
+        if (!info) {
+          setError('Device not found')
+          return
+        }
 
         setDevice({
           name: info.name,
@@ -45,8 +58,14 @@ function DeviceDetail() {
           osRisk: scored ? scored.os : { riskScore: null, riskLevel: "Can't check" },
           software: mergeSoftware(software, scored)
         })
-      }
-    )
+      })
+      .catch(err => {
+        if (active) setError(err.message)
+      })
+
+    return () => {
+      active = false
+    }
   }, [deviceId])
 
   return (
@@ -54,6 +73,14 @@ function DeviceDetail() {
       <p className="breadcrumb">
         <Link to="/">Dashboard</Link> › Device
       </p>
+      {error && (
+        <StatusMessage title="Couldn't load this device" tone="error">
+          {error === 'Device not found' || error === 'Invalid device ID'
+            ? 'This device may have been removed.'
+            : error}
+        </StatusMessage>
+      )}
+      {!error && !device && <StatusMessage title="Loading device…" />}
       {device && (
         <>
           <h1>

@@ -216,3 +216,16 @@ h1 {
   align-items: center;
   margin: 0 0 1.5rem;
 }
+
+.status-message {
+  max-width: 560px;
+}
+
+.status-message p {
+  margin: 0;
+}
+
+.status-error {
+  border-color: #f5b5b5;
+  background: #fff7f7;
+}
