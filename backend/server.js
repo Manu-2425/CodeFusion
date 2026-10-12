@@ -319,6 +319,66 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
   }
 });
 
+
+/*
+ * GET /api/devices/:deviceId/software
+ * Development-only: retrieve software belonging
+ * to the local test user's device.
+ */
+app.get("/api/devices/:deviceId/software", async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const deviceResult = await pool.query(
+      `SELECT d.device_id
+       FROM devices d
+       JOIN users u ON d.user_id = u.user_id
+       WHERE d.device_id = $1
+         AND u.email = $2
+         AND d.deleted_at IS NULL`,
+      [deviceId, "testuser@cyberbuddy.local"]
+    );
+
+    if (deviceResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Device not found"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT software_id, device_id, name, version,
+              vendor, match_status, risk_score
+       FROM software
+       WHERE device_id = $1
+         AND deleted_at IS NULL
+       ORDER BY created_at DESC`,
+      [deviceId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      software: result.rows
+    });
+
+  } catch (error) {
+    if (error.code === "22P02") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid device ID"
+      });
+    }
+
+    console.error("Error fetching software:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve software"
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Cyber Buddy server running on port ${PORT}`);
 });
