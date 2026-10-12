@@ -117,6 +117,47 @@ The tests cover:
 
 All six tests passed during local development.
 
+## Risk Scoring
+
+Risk scoring follows the Risk Scoring Model in the design document (DR5).
+All scores run from 0 to 100, and higher means riskier.
+
+Endpoint:
+
+    GET /api/risk-score
+
+Returns the overall score and level, plus a score for each device,
+its operating system, and each installed program.
+
+How scores are calculated:
+- Program or OS: 10 x highest CVSS score, plus 0 if current,
+  15 if outdated, or 30 if end-of-life (capped at 100)
+- Device: 0.6 x highest item score + 0.4 x average item score
+- Inventory: 0.6 x highest device score + 0.4 x average device score
+- Checklist: No counts fully, Not sure counts as half
+- Overall: 0.8 x inventory + 0.2 x checklist
+
+Risk levels:
+- 0–24 Low
+- 25–49 Moderate
+- 50–74 High
+- 75–100 Critical
+
+Items without vulnerability data are shown as "Can't check"
+instead of being treated as safe.
+
+Weights and levels are stored in config/scoring.json.
+
+Run the risk-scoring tests (no database or server needed):
+
+    node --test tests/riskScoring.test.js tests/riskReport.test.js
+
+Current limitations:
+- Vulnerability (NVD/CVE) and end-of-life data are not connected yet,
+  so most items currently show "Can't check".
+- The security checklist and browser extensions are not scored yet.
+- Scores are calculated on request and not saved to the database.
+
 ## Development Limitations
 
 Authentication is not yet implemented.
