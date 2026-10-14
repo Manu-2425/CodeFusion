@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
-const { getRiskReport } = require("./services/riskReport");
 require("dotenv").config();
 
 const session = require("express-session");
@@ -57,38 +56,18 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-/*
- * requireAuth
- * Inventory and score routes need a logged-in user. The user ID comes
- * only from the server-side session, never from the request, so every
- * query below is limited to the logged-in user's own rows (NF2).
- */
-function requireAuth(req, res, next) {
-  if (!req.session.userId) {
-    return res.status(401).json({
-      success: false,
-      message: "Not authenticated"
-    });
-  }
-
-  next();
-}
-
-app.use(["/api/devices", "/api/software", "/api/risk-score"], requireAuth);
+// Start server
 
 /*
  * GET /api/devices
- * The logged-in user's devices.
+ * Development-only endpoint to verify database access.
+ * Authentication and user filtering will be added before
+ * this endpoint is used by the frontend.
  */
 app.get("/api/devices", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT device_id, name, device_type, os_name, os_version, risk_score
-       FROM devices
-       WHERE user_id = $1
-         AND deleted_at IS NULL
-       ORDER BY created_at DESC`,
-      [req.session.userId]
+      "SELECT device_id, name, device_type, os_name, os_version, risk_score FROM devices WHERE deleted_at IS NULL ORDER BY created_at DESC"
     );
 
     res.status(200).json({
@@ -107,7 +86,7 @@ app.get("/api/devices", async (req, res) => {
 
 /*
  * POST /api/devices
- * Add a device for the logged-in user.
+ * Development-only endpoint for adding devices.
  */
 app.post("/api/devices", async (req, res) => {
   try {
@@ -125,7 +104,20 @@ app.post("/api/devices", async (req, res) => {
       });
     }
 
-    const userId = req.session.userId;
+    // Development-only test user
+    const userResult = await pool.query(
+      "SELECT user_id FROM users WHERE email = $1",
+      ["testuser@cyberbuddy.local"]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Test user not found"
+      });
+    }
+
+    const userId = userResult.rows[0].user_id;
 
     const result = await pool.query(
       `INSERT INTO devices
@@ -160,7 +152,7 @@ app.post("/api/devices", async (req, res) => {
 
 /*
  * PUT /api/devices/:id
- * Edit a device owned by the logged-in user.
+ * Development-only: edits a device belonging to the test user.
  */
 app.put("/api/devices/:id", async (req, res) => {
   try {
@@ -188,7 +180,9 @@ app.put("/api/devices/:id", async (req, res) => {
            os_version = $4,
            updated_at = CURRENT_TIMESTAMP
        WHERE device_id = $5
-         AND user_id = $6
+         AND user_id = (
+           SELECT user_id FROM users WHERE email = $6
+         )
          AND deleted_at IS NULL
        RETURNING *`,
       [
@@ -197,7 +191,7 @@ app.put("/api/devices/:id", async (req, res) => {
         os_name.trim(),
         os_version.trim(),
         id,
-        req.session.userId
+        "testuser@cyberbuddy.local"
       ]
     );
 
@@ -232,7 +226,8 @@ app.put("/api/devices/:id", async (req, res) => {
 
 /*
  * DELETE /api/devices/:id
- * Soft-delete a device owned by the logged-in user.
+ * Development-only: soft-delete a device owned
+ * by the local test user.
  */
 app.delete("/api/devices/:id", async (req, res) => {
   try {
@@ -243,10 +238,14 @@ app.delete("/api/devices/:id", async (req, res) => {
        SET deleted_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        WHERE device_id = $1
-         AND user_id = $2
+         AND user_id = (
+           SELECT user_id
+           FROM users
+           WHERE email = $2
+         )
          AND deleted_at IS NULL
        RETURNING device_id, name`,
-      [id, req.session.userId]
+      [id, "testuser@cyberbuddy.local"]
     );
 
     if (result.rows.length === 0) {
@@ -282,7 +281,7 @@ app.delete("/api/devices/:id", async (req, res) => {
 
 /*
  * POST /api/devices/:deviceId/software
- * Add software to a device owned by the logged-in user.
+ * Development-only Add Software API
  */
 app.post("/api/devices/:deviceId/software", async (req, res) => {
   try {
@@ -305,8 +304,9 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
       `INSERT INTO software (device_id, name, version, vendor)
        SELECT d.device_id, $2, $3, $4
        FROM devices d
+       JOIN users u ON u.user_id = d.user_id
        WHERE d.device_id = $1
-         AND d.user_id = $5
+         AND u.email = $5
          AND d.deleted_at IS NULL
        RETURNING *`,
       [
@@ -314,7 +314,7 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
         name.trim(),
         version.trim(),
         vendor?.trim() || null,
-        req.session.userId
+        "testuser@cyberbuddy.local"
       ]
     );
 
@@ -351,7 +351,8 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
 
 /*
  * GET /api/devices/:deviceId/software
- * Software on a device owned by the logged-in user.
+ * Development-only: retrieve software belonging
+ * to the local test user's device.
  */
 app.get("/api/devices/:deviceId/software", async (req, res) => {
   try {
@@ -360,10 +361,11 @@ app.get("/api/devices/:deviceId/software", async (req, res) => {
     const deviceResult = await pool.query(
       `SELECT d.device_id
        FROM devices d
+       JOIN users u ON d.user_id = u.user_id
        WHERE d.device_id = $1
-         AND d.user_id = $2
+         AND u.email = $2
          AND d.deleted_at IS NULL`,
-      [deviceId, req.session.userId]
+      [deviceId, "testuser@cyberbuddy.local"]
     );
 
     if (deviceResult.rows.length === 0) {
@@ -409,7 +411,8 @@ app.get("/api/devices/:deviceId/software", async (req, res) => {
 
 /*
  * PUT /api/software/:id
- * Update software on a device owned by the logged-in user.
+ * Development-only: update software owned
+ * by the local test user's device.
  */
 app.put("/api/software/:id", async (req, res) => {
   try {
@@ -440,9 +443,10 @@ app.put("/api/software/:id", async (req, res) => {
            risk_score = NULL,
            updated_at = CURRENT_TIMESTAMP
        FROM devices AS d
+       JOIN users AS u ON d.user_id = u.user_id
        WHERE s.software_id = $4
          AND s.device_id = d.device_id
-         AND d.user_id = $5
+         AND u.email = $5
          AND s.deleted_at IS NULL
          AND d.deleted_at IS NULL
        RETURNING s.*`,
@@ -451,7 +455,7 @@ app.put("/api/software/:id", async (req, res) => {
         version.trim(),
         vendor?.trim() || null,
         id,
-        req.session.userId
+        "testuser@cyberbuddy.local"
       ]
     );
 
@@ -488,7 +492,8 @@ app.put("/api/software/:id", async (req, res) => {
 
 /*
  * DELETE /api/software/:id
- * Soft-delete software on a device owned by the logged-in user.
+ * Development-only: soft-delete software belonging
+ * to the local test user's device.
  */
 app.delete("/api/software/:id", async (req, res) => {
   try {
@@ -499,13 +504,14 @@ app.delete("/api/software/:id", async (req, res) => {
        SET deleted_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        FROM devices AS d
+       JOIN users AS u ON d.user_id = u.user_id
        WHERE s.software_id = $1
          AND s.device_id = d.device_id
-         AND d.user_id = $2
+         AND u.email = $2
          AND s.deleted_at IS NULL
          AND d.deleted_at IS NULL
        RETURNING s.software_id, s.name`,
-      [id, req.session.userId]
+      [id, "testuser@cyberbuddy.local"]
     );
 
     if (result.rows.length === 0) {
@@ -534,30 +540,6 @@ app.delete("/api/software/:id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to remove software"
-    });
-  }
-});
-
-/*
- * GET /api/risk-score
- * Risk report for the logged-in user's inventory.
- * Read-only; scores are not saved yet.
- */
-app.get("/api/risk-score", async (req, res) => {
-  try {
-    const report = await getRiskReport(pool, req.session.userId);
-
-    return res.status(200).json({
-      success: true,
-      ...report
-    });
-
-  } catch (error) {
-    console.error("Error calculating risk score:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Unable to calculate risk score"
     });
   }
 });
