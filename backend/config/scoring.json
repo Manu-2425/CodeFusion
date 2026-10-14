@@ -1,0 +1,27 @@
+{
+  "item": {
+    "cvssMultiplier": 10,
+    "agePenalty": {
+      "current": 0,
+      "outdated": 15,
+      "end_of_life": 30
+    }
+  },
+  "aggregate": {
+    "highestWeight": 0.6,
+    "averageWeight": 0.4
+  },
+  "overall": {
+    "inventoryWeight": 0.8,
+    "checklistWeight": 0.2
+  },
+  "checklist": {
+    "notSureFactor": 0.5
+  },
+  "bands": [
+    { "min": 75, "level": "Critical" },
+    { "min": 50, "level": "High" },
+    { "min": 25, "level": "Moderate" },
+    { "min": 0, "level": "Low" }
+  ]
+}
