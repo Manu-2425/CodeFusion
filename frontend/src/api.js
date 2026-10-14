@@ -2,6 +2,10 @@
 // Requests use relative /api paths; the Vite dev server forwards them
 // to the backend set by BACKEND_URL in frontend/.env.
 
+// Fired when the backend says the session is gone (expired or logged out
+// in another tab). AuthProvider listens for it and sends the user to log in.
+export const SESSION_ENDED_EVENT = 'cyberbuddy:session-ended'
+
 async function request(path, { method = 'GET', body } = {}) {
   let response
 
@@ -20,6 +24,11 @@ async function request(path, { method = 'GET', body } = {}) {
   if (!response.ok || !data?.success) {
     const error = new Error(data?.message || `Request failed (${response.status})`)
     error.status = response.status
+
+    if (response.status === 401 && !path.startsWith('/api/auth/')) {
+      window.dispatchEvent(new Event(SESSION_ENDED_EVENT))
+    }
+
     throw error
   }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getCurrentUser, login, logout, register } from '../api.js'
+import { getCurrentUser, login, logout, register, SESSION_ENDED_EVENT } from '../api.js'
 import { AuthContext } from './authContext.js'
 
 // Keeps track of who is logged in, using the backend session cookie.
@@ -24,6 +24,17 @@ function AuthProvider({ children }) {
     return () => {
       active = false
     }
+  }, [])
+
+  // A protected request came back 401: forget the user so RequireAuth
+  // redirects to the login page.
+  useEffect(() => {
+    function handleSessionEnded() {
+      setUser(null)
+    }
+
+    window.addEventListener(SESSION_ENDED_EVENT, handleSessionEnded)
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, handleSessionEnded)
   }, [])
 
   const signIn = useCallback(async credentials => {

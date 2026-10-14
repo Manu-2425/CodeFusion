@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/authContext.js'
 import FormField from '../components/FormField.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
@@ -10,6 +10,9 @@ const EMPTY_FORM = { displayName: '', email: '', password: '', confirmPassword: 
 // Log in and Sign up share one page (/login and /login?mode=signup).
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  // Page the user was sent here from by RequireAuth, if any.
+  const returnTo = location.state?.from?.pathname || '/'
   const [searchParams, setSearchParams] = useSearchParams()
   const isSignUp = searchParams.get('mode') === 'signup'
   const { user, checking, signIn, signUp } = useAuth()
@@ -50,7 +53,7 @@ function LoginPage() {
         ? `Welcome to Cyber Buddy, ${user.display_name}.`
         : `Welcome back, ${user.display_name}.`
 
-      navigate('/', { state: { notice } })
+      navigate(returnTo, { replace: true, state: { notice } })
     } catch (err) {
       setServerError(err.message)
       setSubmitting(false)

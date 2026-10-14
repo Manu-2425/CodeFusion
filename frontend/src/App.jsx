@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import NavBar from './components/NavBar.jsx'
+import RequireAuth from './auth/RequireAuth.jsx'
 import Notice from './components/Notice.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DeviceDetail from './pages/DeviceDetail.jsx'
@@ -15,15 +16,24 @@ function App() {
       <main className="page">
         <Notice />
         <Routes>
-          <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/devices/new" element={<DeviceForm />} />
-          <Route path="/devices/:deviceId" element={<DeviceDetail />} />
-          <Route path="/devices/:deviceId/edit" element={<DeviceForm />} />
-          <Route path="/devices/:deviceId/software/new" element={<SoftwareForm />} />
+          <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/devices/new" element={<RequireAuth><DeviceForm /></RequireAuth>} />
+          <Route
+            path="/devices/:deviceId"
+            element={<RequireAuth><DeviceDetail /></RequireAuth>}
+          />
+          <Route
+            path="/devices/:deviceId/edit"
+            element={<RequireAuth><DeviceForm /></RequireAuth>}
+          />
+          <Route
+            path="/devices/:deviceId/software/new"
+            element={<RequireAuth><SoftwareForm /></RequireAuth>}
+          />
           <Route
             path="/devices/:deviceId/software/:softwareId/edit"
-            element={<SoftwareForm />}
+            element={<RequireAuth><SoftwareForm /></RequireAuth>}
           />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -20,12 +20,14 @@ function NavBar() {
         <span className="navbar-logo">CB</span>
         Cyber Buddy
       </Link>
-      <nav className="navbar-links">
-        <NavLink to="/" end>
-          Dashboard
-        </NavLink>
-        <NavLink to="/devices/new">Add device</NavLink>
-      </nav>
+      {user && (
+        <nav className="navbar-links">
+          <NavLink to="/" end>
+            Dashboard
+          </NavLink>
+          <NavLink to="/devices/new">Add device</NavLink>
+        </nav>
+      )}
       {!checking && (
         <div className="navbar-account">
           {user ? (
