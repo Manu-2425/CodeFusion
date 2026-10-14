@@ -29,27 +29,25 @@ function toScoringInput(deviceRows, softwareRows) {
   }));
 }
 
-async function getRiskReport(pool, email) {
+async function getRiskReport(pool, userId) {
   const devicesResult = await pool.query(
     `SELECT d.device_id, d.name, d.os_name, d.os_version
      FROM devices d
-     JOIN users u ON u.user_id = d.user_id
-     WHERE u.email = $1
+     WHERE d.user_id = $1
        AND d.deleted_at IS NULL
      ORDER BY d.created_at DESC`,
-    [email]
+    [userId]
   );
 
   const softwareResult = await pool.query(
     `SELECT s.software_id, s.device_id, s.name, s.match_status
      FROM software s
      JOIN devices d ON d.device_id = s.device_id
-     JOIN users u ON u.user_id = d.user_id
-     WHERE u.email = $1
+     WHERE d.user_id = $1
        AND s.deleted_at IS NULL
        AND d.deleted_at IS NULL
      ORDER BY s.created_at DESC`,
-    [email]
+    [userId]
   );
 
   return calculateRisk({
