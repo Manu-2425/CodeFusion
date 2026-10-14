@@ -34,9 +34,10 @@ test("Report reads the user's inventory and scores it", async () => {
     }
   };
 
-  const report = await getRiskReport(fakePool, "user@example.com");
+  const userId = "11111111-1111-4111-8111-111111111111";
+  const report = await getRiskReport(fakePool, userId);
 
-  assert.deepEqual(calls, [["user@example.com"], ["user@example.com"]]);
+  assert.deepEqual(calls, [[userId], [userId]]);
   assert.equal(report.devices.length, 2);
 
   // No vulnerability data yet: only the verified program has a score.
@@ -48,7 +49,7 @@ test("Report reads the user's inventory and scores it", async () => {
 
 test("Empty inventory returns no score", async () => {
   const fakePool = { query: async () => ({ rows: [] }) };
-  const report = await getRiskReport(fakePool, "user@example.com");
+  const report = await getRiskReport(fakePool, "11111111-1111-4111-8111-111111111111");
 
   assert.equal(report.riskScore, null);
   assert.equal(report.riskLevel, "Can't check");
