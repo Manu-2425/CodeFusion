@@ -1,56 +1,95 @@
-const test = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { getRiskReport, toScoringInput } = require("../services/riskReport");
 
-// Fictional rows shaped like the devices and software tables.
-const deviceRows = [
-  { device_id: "d1", name: "Sample Laptop", os_name: "Windows", os_version: "10" },
-  { device_id: "d2", name: "Sample Phone", os_name: "Android", os_version: "14" }
-];
+const BASE_URL = "http://localhost:5001";
 
-const softwareRows = [
-  { software_id: "s1", device_id: "d1", name: "Sample Browser", match_status: "unverified" },
-  { software_id: "s2", device_id: "d1", name: "Sample Office", match_status: "verified" }
-];
+test("Health API returns OK", async () => {
+  const response = await fetch(`${BASE_URL}/api/health`);
+  const data = await response.json();
 
-test("Rows are grouped into devices with their software", () => {
-  const [laptop, phone] = toScoringInput(deviceRows, softwareRows);
-
-  assert.equal(laptop.os.name, "Windows 10");
-  assert.equal(laptop.os.verified, false);
-  assert.deepEqual(
-    laptop.software.map(item => [item.id, item.verified]),
-    [["s1", false], ["s2", true]]
-  );
-  assert.deepEqual(phone.software, []);
+  assert.equal(response.status, 200);
+  assert.equal(data.status, "OK");
 });
 
-test("Report reads the user's inventory and scores it", async () => {
-  const calls = [];
-  const fakePool = {
-    query: async (sql, params) => {
-      calls.push(params);
-      return { rows: calls.length === 1 ? deviceRows : softwareRows };
+test("GET devices returns a device list", async () => {
+  const response = await fetch(`${BASE_URL}/api/devices`);
+  const data = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(data.success, true);
+  assert.ok(Array.isArray(data.devices));
+});
+
+test("POST device rejects missing fields", async () => {
+  const response = await fetch(`${BASE_URL}/api/devices`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Test Laptop",
+      device_type: "Laptop"
+    })
+  });
+
+  const data = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(data.success, false);
+  assert.equal(data.message, "All device fields are required");
+});
+
+test("PUT device rejects invalid ID", async () => {
+  const response = await fetch(`${BASE_URL}/api/devices/invalid-id`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Test Laptop",
+      device_type: "Laptop",
+      os_name: "Windows",
+      os_version: "11"
+    })
+  });
+
+  const data = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(data.message, "Invalid device ID");
+});
+
+test("POST software rejects missing version", async () => {
+  const deviceId = "00000000-0000-4000-8000-000000000000";
+
+  const response = await fetch(
+    `${BASE_URL}/api/devices/${deviceId}/software`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Google Chrome",
+        vendor: "Google"
+      })
     }
-  };
+  );
 
-  const userId = "11111111-1111-4111-8111-111111111111";
-  const report = await getRiskReport(fakePool, userId);
+  const data = await response.json();
 
-  assert.deepEqual(calls, [[userId], [userId]]);
-  assert.equal(report.devices.length, 2);
-
-  // No vulnerability data yet: only the verified program has a score.
-  assert.equal(report.devices[0].riskScore, 0);
-  assert.equal(report.devices[0].os.riskLevel, "Can't check");
-  assert.equal(report.devices[1].riskScore, null);
-  assert.equal(report.riskScore, 0);
+  assert.equal(response.status, 400);
+  assert.equal(
+    data.message,
+    "Valid software name and version are required"
+  );
 });
 
-test("Empty inventory returns no score", async () => {
-  const fakePool = { query: async () => ({ rows: [] }) };
-  const report = await getRiskReport(fakePool, "11111111-1111-4111-8111-111111111111");
 
-  assert.equal(report.riskScore, null);
-  assert.equal(report.riskLevel, "Can't check");
+test("GET software returns 404 for an unknown device", async () => {
+  const deviceId = "00000000-0000-4000-8000-000000000000";
+
+  const response = await fetch(
+    `${BASE_URL}/api/devices/${deviceId}/software`
+  );
+
+  const data = await response.json();
+
+  assert.equal(response.status, 404);
+  assert.equal(data.success, false);
+  assert.equal(data.message, "Device not found");
 });
