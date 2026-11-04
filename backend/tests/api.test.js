@@ -243,6 +243,46 @@ test("GET software returns 404 for an unknown device", async () => {
   assert.equal(data.message, "Device not found");
 });
 
+test("Over-long device fields are rejected with 400 (D-01)", async () => {
+  const atLimit = await call("/api/devices", {
+    method: "POST",
+    body: { ...laptop, name: "x".repeat(100) },
+    cookie: alice
+  });
+  assert.equal(atLimit.status, 201);
+
+  const tooLong = await call("/api/devices", {
+    method: "POST",
+    body: { ...laptop, name: "x".repeat(101) },
+    cookie: alice
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.data.message, "One or more device fields are too long");
+
+  const editTooLong = await call(`/api/devices/${atLimit.data.device.device_id}`, {
+    method: "PUT",
+    body: { ...laptop, os_version: "1".repeat(101) },
+    cookie: alice
+  });
+  assert.equal(editTooLong.status, 400);
+});
+
+test("Over-long software fields are rejected with 400 (D-01)", async () => {
+  const added = await call("/api/devices", {
+    method: "POST",
+    body: laptop,
+    cookie: alice
+  });
+  const deviceId = added.data.device.device_id;
+  const addSoftware = body =>
+    call(`/api/devices/${deviceId}/software`, { method: "POST", body, cookie: alice });
+
+  assert.equal((await addSoftware({ name: "s".repeat(150), version: "1" })).status, 201);
+  assert.equal((await addSoftware({ name: "s".repeat(151), version: "1" })).status, 400);
+  assert.equal((await addSoftware({ name: "App", version: "1".repeat(100) })).status, 201);
+  assert.equal((await addSoftware({ name: "App", version: "1".repeat(101) })).status, 400);
+});
+
 test("Logging out ends access to inventory", async () => {
   const cookie = await signUpAndLogIn("carol");
 

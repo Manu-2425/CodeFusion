@@ -77,6 +77,23 @@ function requireAuth(req, res, next) {
 app.use(["/api/devices", "/api/software", "/api/risk-score"], requireAuth);
 
 /*
+ * Database column sizes for device fields (see schema.sql).
+ * Checking them here returns a clear 400 instead of a database error (D-01).
+ */
+const DEVICE_FIELD_LIMITS = {
+  name: 100,
+  device_type: 50,
+  os_name: 100,
+  os_version: 100
+};
+
+function deviceFieldsTooLong(fields) {
+  return Object.entries(DEVICE_FIELD_LIMITS).some(
+    ([field, max]) => fields[field].trim().length > max
+  );
+}
+
+/*
  * GET /api/devices
  * The logged-in user's devices.
  */
@@ -122,6 +139,13 @@ app.post("/api/devices", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All device fields are required"
+      });
+    }
+
+    if (deviceFieldsTooLong({ name, device_type, os_name, os_version })) {
+      return res.status(400).json({
+        success: false,
+        message: "One or more device fields are too long"
       });
     }
 
@@ -177,6 +201,13 @@ app.put("/api/devices/:id", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All device fields are required"
+      });
+    }
+
+    if (deviceFieldsTooLong(fields)) {
+      return res.status(400).json({
+        success: false,
+        message: "One or more device fields are too long"
       });
     }
 
@@ -291,7 +322,9 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
 
     if (
       typeof name !== "string" || !name.trim() ||
+      name.trim().length > 150 ||
       typeof version !== "string" || !version.trim() ||
+      version.trim().length > 100 ||
       (vendor !== undefined &&
         (typeof vendor !== "string" || vendor.length > 150))
     ) {
