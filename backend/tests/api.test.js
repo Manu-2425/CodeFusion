@@ -283,6 +283,80 @@ test("Over-long software fields are rejected with 400 (D-01)", async () => {
   assert.equal((await addSoftware({ name: "App", version: "1".repeat(101) })).status, 400);
 });
 
+test("Detected device saves its browser as software (Detect this computer)", async () => {
+  const added = await call("/api/devices", {
+    method: "POST",
+    body: {
+      ...laptop,
+      os_name: "macOS",
+      os_version: "26.6.2",
+      source: "detected",
+      browser: { name: "Google Chrome", version: "141.0.7390.55" }
+    },
+    cookie: alice
+  });
+  assert.equal(added.status, 201);
+  assert.equal(added.data.device.source, "detected");
+  assert.equal(added.data.software.name, "Google Chrome");
+  assert.equal(added.data.software.source, "detected");
+
+  const deviceId = added.data.device.device_id;
+  const list = await call(`/api/devices/${deviceId}/software`, { cookie: alice });
+  assert.equal(list.status, 200);
+  assert.equal(list.data.software.length, 1);
+  assert.equal(list.data.software[0].version, "141.0.7390.55");
+  assert.equal(list.data.software[0].source, "detected");
+
+  const devices = await call("/api/devices", { cookie: alice });
+  const device = devices.data.devices.find(d => d.device_id === deviceId);
+  assert.equal(device.source, "detected");
+});
+
+test("Devices added without a source are manual and have no software", async () => {
+  const added = await call("/api/devices", {
+    method: "POST",
+    body: laptop,
+    cookie: alice
+  });
+  assert.equal(added.status, 201);
+  assert.equal(added.data.device.source, "manual");
+  assert.equal(added.data.software, null);
+});
+
+test("Invalid source or browser is rejected and nothing is saved", async () => {
+  const before = await call("/api/devices", { cookie: bob });
+
+  for (const source of ["extension", "unknown", 5]) {
+    const result = await call("/api/devices", {
+      method: "POST",
+      body: { ...laptop, source },
+      cookie: bob
+    });
+    assert.equal(result.status, 400, `source ${source}`);
+    assert.equal(result.data.message, "Source must be manual or detected");
+  }
+
+  const badBrowsers = [
+    null,
+    "Chrome",
+    { name: "Chrome" },
+    { name: "", version: "1" },
+    { name: "Chrome", version: "1".repeat(101) }
+  ];
+  for (const browser of badBrowsers) {
+    const result = await call("/api/devices", {
+      method: "POST",
+      body: { ...laptop, source: "detected", browser },
+      cookie: bob
+    });
+    assert.equal(result.status, 400, `browser ${JSON.stringify(browser)}`);
+    assert.equal(result.data.message, "Browser needs a valid name and version");
+  }
+
+  const after = await call("/api/devices", { cookie: bob });
+  assert.equal(after.data.devices.length, before.data.devices.length);
+});
+
 test("Logging out ends access to inventory", async () => {
   const cookie = await signUpAndLogIn("carol");
 

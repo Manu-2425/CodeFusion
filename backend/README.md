@@ -165,3 +165,37 @@ Some endpoints currently use a fixed development test account.
 The GET Devices endpoint is not yet restricted by user.
 
 These limitations must be resolved before public deployment.
+
+## Database migrations
+
+When a change needs new database columns, it comes with a file in `migrations/`.
+Run each new migration once against your local database (it is safe to run again):
+
+```
+psql -d cyberbuddy -f migrations/001_add_source.sql
+```
+
+| Migration | What it adds |
+|---|---|
+| 001_add_source.sql | `source` column (manual, detected or extension) on `devices` and `software`, for "Detect this computer" |
+
+`schema.sql` already includes every migration, so a brand-new database only needs `schema.sql`.
+
+## Detect this computer: request format
+
+`POST /api/devices` accepts two optional fields:
+
+```
+{
+  "name": "Manu's MacBook",
+  "device_type": "Laptop/Desktop",
+  "os_name": "macOS",
+  "os_version": "26.6.2",
+  "source": "detected",
+  "browser": { "name": "Google Chrome", "version": "141.0.7390.55" }
+}
+```
+
+- `source` is `manual` (the default) or `detected`.
+- If `browser` is sent, it is saved as a software item on the new device. The device and browser are saved together, or not at all.
+- The response includes `device` and `software` (or `software: null` when no browser was sent).
