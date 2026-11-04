@@ -2,6 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
 const { getRiskReport } = require("./services/riskReport");
+const {
+  saveSnapshotIfChanged,
+  getScoreHistory,
+  HISTORY_RANGES
+} = require("./services/scoreSnapshots");
 require("dotenv").config();
 
 const session = require("express-session");
@@ -74,7 +79,23 @@ function requireAuth(req, res, next) {
   next();
 }
 
-app.use(["/api/devices", "/api/software", "/api/risk-score"], requireAuth);
+app.use(
+  ["/api/devices", "/api/software", "/api/risk-score", "/api/score-history"],
+  requireAuth
+);
+
+/*
+ * After a device or software change, save a score snapshot if the score
+ * changed (R15). A failure here is logged but never fails the user's
+ * request: the change itself has already been saved.
+ */
+async function recordScoreChange(userId) {
+  try {
+    await saveSnapshotIfChanged(pool, userId);
+  } catch (error) {
+    console.error("Error saving score snapshot:", error);
+  }
+}
 
 /*
  * Database column sizes for device fields (see schema.sql).
@@ -215,6 +236,7 @@ app.post("/api/devices", async (req, res) => {
       }
 
       await client.query("COMMIT");
+      await recordScoreChange(userId);
 
       res.status(201).json({
         success: true,
@@ -297,6 +319,8 @@ app.put("/api/devices/:id", async (req, res) => {
       });
     }
 
+    await recordScoreChange(req.session.userId);
+
     res.status(200).json({
       success: true,
       message: "Device updated successfully",
@@ -344,6 +368,8 @@ app.delete("/api/devices/:id", async (req, res) => {
         message: "Device not found"
       });
     }
+
+    await recordScoreChange(req.session.userId);
 
     res.status(200).json({
       success: true,
@@ -415,6 +441,8 @@ app.post("/api/devices/:deviceId/software", async (req, res) => {
         message: "Device not found"
       });
     }
+
+    await recordScoreChange(req.session.userId);
 
     return res.status(201).json({
       success: true,
@@ -553,6 +581,8 @@ app.put("/api/software/:id", async (req, res) => {
       });
     }
 
+    await recordScoreChange(req.session.userId);
+
     return res.status(200).json({
       success: true,
       message: "Software updated successfully",
@@ -606,6 +636,8 @@ app.delete("/api/software/:id", async (req, res) => {
       });
     }
 
+    await recordScoreChange(req.session.userId);
+
     return res.status(200).json({
       success: true,
       message: "Software removed successfully",
@@ -625,6 +657,39 @@ app.delete("/api/software/:id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to remove software"
+    });
+  }
+});
+
+/*
+ * GET /api/score-history?days=30|90|365
+ * The logged-in user's saved score snapshots, oldest first (R15, S11).
+ */
+app.get("/api/score-history", async (req, res) => {
+  const days = req.query.days === undefined ? 30 : Number(req.query.days);
+
+  if (!HISTORY_RANGES.includes(days)) {
+    return res.status(400).json({
+      success: false,
+      message: "days must be 30, 90 or 365"
+    });
+  }
+
+  try {
+    const snapshots = await getScoreHistory(pool, req.session.userId, days);
+
+    return res.status(200).json({
+      success: true,
+      days,
+      count: snapshots.length,
+      snapshots
+    });
+  } catch (error) {
+    console.error("Error fetching score history:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve score history"
     });
   }
 });

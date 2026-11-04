@@ -155,6 +155,24 @@ ALTER TABLE ONLY public.software
     ADD CONSTRAINT software_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(device_id) ON DELETE CASCADE;
 
 
+
+--
+-- Name: score_snapshots; Type: TABLE; Schema: public
+-- (also added to existing databases by migrations/002_score_snapshots.sql)
+--
+
+CREATE TABLE public.score_snapshots (
+    snapshot_id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES public.users(user_id) ON DELETE CASCADE,
+    overall_score integer NOT NULL,
+    risk_level character varying(20) NOT NULL,
+    device_scores jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT score_snapshots_overall_score_check CHECK (((overall_score >= 0) AND (overall_score <= 100)))
+);
+
+CREATE INDEX idx_score_snapshots_user_created ON public.score_snapshots USING btree (user_id, created_at DESC);
+
 --
 -- PostgreSQL database dump complete
 --
