@@ -178,6 +178,7 @@ psql -d cyberbuddy -f migrations/001_add_source.sql
 | Migration | What it adds |
 |---|---|
 | 001_add_source.sql | `source` column (manual, detected or extension) on `devices` and `software`, for "Detect this computer" |
+| 002_score_snapshots.sql | `score_snapshots` table for score history (R15) |
 
 `schema.sql` already includes every migration, so a brand-new database only needs `schema.sql`.
 
@@ -199,3 +200,12 @@ psql -d cyberbuddy -f migrations/001_add_source.sql
 - `source` is `manual` (the default) or `detected`.
 - If `browser` is sent, it is saved as a software item on the new device. The device and browser are saved together, or not at all.
 - The response includes `device` and `software` (or `software: null` when no browser was sent).
+
+## Score history
+
+Whenever a device or software entry is added, edited or removed, the backend asks the scoring engine for the user's current overall score and saves a snapshot, but only when:
+
+- the score is a real number (nothing is saved while scores are "Can't check"), and
+- it is different from the user's last snapshot.
+
+`GET /api/score-history?days=30` returns the snapshots, oldest first. `days` can be 30, 90 or 365 (default 30). Each snapshot has `overall_score`, `risk_level`, `device_scores` and `created_at`.

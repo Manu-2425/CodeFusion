@@ -77,7 +77,8 @@ test("Inventory and score routes require login", async () => {
     ["POST", `/api/devices/${UNKNOWN_ID}/software`],
     ["PUT", `/api/software/${UNKNOWN_ID}`],
     ["DELETE", `/api/software/${UNKNOWN_ID}`],
-    ["GET", "/api/risk-score"]
+    ["GET", "/api/risk-score"],
+    ["GET", "/api/score-history"]
   ];
 
   for (const [method, path] of checks) {
@@ -355,6 +356,31 @@ test("Invalid source or browser is rejected and nothing is saved", async () => {
 
   const after = await call("/api/devices", { cookie: bob });
   assert.equal(after.data.devices.length, before.data.devices.length);
+});
+
+test("Score history starts empty while scores are Can't check", async () => {
+  const cookie = await signUpAndLogIn("dana");
+
+  await call("/api/devices", { method: "POST", body: laptop, cookie });
+
+  const history = await call("/api/score-history", { cookie });
+  assert.equal(history.status, 200);
+  assert.equal(history.data.days, 30);
+  assert.deepEqual(history.data.snapshots, []);
+
+  for (const days of [90, 365]) {
+    const result = await call(`/api/score-history?days=${days}`, { cookie });
+    assert.equal(result.status, 200);
+    assert.equal(result.data.days, days);
+  }
+});
+
+test("Score history rejects an unsupported range", async () => {
+  for (const days of ["7", "abc", "0"]) {
+    const result = await call(`/api/score-history?days=${days}`, { cookie: alice });
+    assert.equal(result.status, 400, `days ${days}`);
+    assert.equal(result.data.message, "days must be 30, 90 or 365");
+  }
 });
 
 test("Logging out ends access to inventory", async () => {
