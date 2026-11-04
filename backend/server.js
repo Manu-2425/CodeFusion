@@ -100,7 +100,7 @@ function deviceFieldsTooLong(fields) {
 app.get("/api/devices", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT device_id, name, device_type, os_name, os_version, risk_score
+      `SELECT device_id, name, device_type, os_name, os_version, risk_score, source
        FROM devices
        WHERE user_id = $1
          AND deleted_at IS NULL
@@ -125,10 +125,16 @@ app.get("/api/devices", async (req, res) => {
 /*
  * POST /api/devices
  * Add a device for the logged-in user.
+ *
+ * Optional fields for "Detect this computer" (DR13):
+ *   source:  "manual" (default) or "detected"
+ *   browser: { name, version } - saved as a software item on the new device
+ * The device and its browser are saved together: either both or neither.
  */
 app.post("/api/devices", async (req, res) => {
   try {
-    const { name, device_type, os_name, os_version } = req.body;
+    const { name, device_type, os_name, os_version, browser } = req.body;
+    const source = req.body.source === undefined ? "manual" : req.body.source;
 
     if (
       typeof name !== "string" || !name.trim() ||
@@ -149,27 +155,79 @@ app.post("/api/devices", async (req, res) => {
       });
     }
 
+    // "extension" is reserved for the browser extension's own sync route.
+    if (source !== "manual" && source !== "detected") {
+      return res.status(400).json({
+        success: false,
+        message: "Source must be manual or detected"
+      });
+    }
+
+    if (
+      browser !== undefined &&
+      (
+        browser === null || typeof browser !== "object" ||
+        typeof browser.name !== "string" || !browser.name.trim() ||
+        browser.name.trim().length > 150 ||
+        typeof browser.version !== "string" || !browser.version.trim() ||
+        browser.version.trim().length > 100
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Browser needs a valid name and version"
+      });
+    }
+
     const userId = req.session.userId;
+    const client = await pool.connect();
 
-    const result = await pool.query(
-      `INSERT INTO devices
-       (user_id, name, device_type, os_name, os_version)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [
-        userId,
-        name.trim(),
-        device_type.trim(),
-        os_name.trim(),
-        os_version.trim()
-      ]
-    );
+    try {
+      await client.query("BEGIN");
 
-    res.status(201).json({
-      success: true,
-      message: "Device added successfully",
-      device: result.rows[0]
-    });
+      const deviceResult = await client.query(
+        `INSERT INTO devices
+         (user_id, name, device_type, os_name, os_version, source)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          userId,
+          name.trim(),
+          device_type.trim(),
+          os_name.trim(),
+          os_version.trim(),
+          source
+        ]
+      );
+      const device = deviceResult.rows[0];
+
+      let software = null;
+      if (browser !== undefined) {
+        const softwareResult = await client.query(
+          `INSERT INTO software
+           (device_id, name, version, source)
+           VALUES ($1, $2, $3, $4)
+           RETURNING software_id, device_id, name, version,
+                     vendor, match_status, risk_score, source`,
+          [device.device_id, browser.name.trim(), browser.version.trim(), source]
+        );
+        software = softwareResult.rows[0];
+      }
+
+      await client.query("COMMIT");
+
+      res.status(201).json({
+        success: true,
+        message: "Device added successfully",
+        device,
+        software
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
 
   } catch (error) {
     console.error("Error adding device:", error);
@@ -408,7 +466,7 @@ app.get("/api/devices/:deviceId/software", async (req, res) => {
 
     const result = await pool.query(
       `SELECT software_id, device_id, name, version,
-              vendor, match_status, risk_score
+              vendor, match_status, risk_score, source
        FROM software
        WHERE device_id = $1
          AND deleted_at IS NULL

@@ -38,7 +38,9 @@ CREATE TABLE public.devices (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone,
-    CONSTRAINT devices_risk_score_check CHECK (((risk_score >= 0) AND (risk_score <= 100)))
+    source character varying(20) DEFAULT 'manual'::character varying NOT NULL,
+    CONSTRAINT devices_risk_score_check CHECK (((risk_score >= 0) AND (risk_score <= 100))),
+    CONSTRAINT devices_source_check CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'detected'::character varying, 'extension'::character varying])::text[])))
 );
 
 
@@ -58,8 +60,10 @@ CREATE TABLE public.software (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone,
+    source character varying(20) DEFAULT 'manual'::character varying NOT NULL,
     CONSTRAINT software_match_status_check CHECK (((match_status)::text = ANY ((ARRAY['verified'::character varying, 'unverified'::character varying])::text[]))),
-    CONSTRAINT software_risk_score_check CHECK (((risk_score >= 0) AND (risk_score <= 100)))
+    CONSTRAINT software_risk_score_check CHECK (((risk_score >= 0) AND (risk_score <= 100))),
+    CONSTRAINT software_source_check CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'detected'::character varying, 'extension'::character varying])::text[])))
 );
 
 
