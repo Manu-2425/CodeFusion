@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createDevice, getDevices, updateDevice } from '../api.js'
 import FormField from '../components/FormField.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
+import { canDetect, detectThisComputer, suggestedName } from '../detectDevice.js'
 import { OPERATING_SYSTEMS, versionHelpFor } from '../deviceOptions.js'
 import { validateDevice } from '../validation.js'
 
@@ -26,6 +27,10 @@ function DeviceForm() {
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [serverError, setServerError] = useState(null)
+  // Set after "Detect this computer": { browser } (browser may be null).
+  const [detected, setDetected] = useState(null)
+  const [detecting, setDetecting] = useState(false)
+  const [detectMessage, setDetectMessage] = useState(null)
 
   useEffect(() => {
     if (!isEdit) return
@@ -66,6 +71,41 @@ function DeviceForm() {
     setValues(current => ({ ...current, [field]: value }))
   }
 
+  async function handleDetect() {
+    setDetecting(true)
+    setDetectMessage(null)
+
+    try {
+      const result = await detectThisComputer()
+
+      setValues(current => ({
+        ...current,
+        name: current.name.trim() ? current.name : suggestedName(result.os_name),
+        device_type: result.device_type,
+        os_name: result.os_name,
+        os_version: result.os_version
+      }))
+      setDetected({ browser: result.browser })
+
+      const osText = [result.os_name, result.os_version].filter(Boolean).join(' ')
+      const browserText = result.browser
+        ? ` and ${result.browser.name} ${result.browser.version}`
+        : ''
+      const versionNote = result.os_version
+        ? ''
+        : ' Please type in your operating system version.'
+      setDetectMessage({
+        tone: 'success',
+        text: `We filled in ${osText}${browserText}. Check the details, change anything that’s wrong, then save.${versionNote}`
+      })
+    } catch (err) {
+      setDetected(null)
+      setDetectMessage({ tone: 'info', text: err.message })
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
 
@@ -86,13 +126,25 @@ function DeviceForm() {
         os_name: values.os_name,
         os_version: values.os_version.trim()
       }
+
+      // A detected device is saved with its browser as a software item.
+      if (!isEdit && detected) {
+        fields.source = 'detected'
+        if (detected.browser) {
+          fields.browser = detected.browser
+        }
+      }
+
       const device = isEdit
         ? await updateDevice(deviceId, fields)
         : await createDevice(fields)
 
-      navigate(`/devices/${device.device_id}`, {
-        state: { notice: isEdit ? 'Device updated.' : 'Device added.' }
-      })
+      let notice = isEdit ? 'Device updated.' : 'Device added.'
+      if (!isEdit && fields.browser) {
+        notice = `Device added with ${fields.browser.name}.`
+      }
+
+      navigate(`/devices/${device.device_id}`, { state: { notice } })
     } catch (err) {
       setServerError(err.message)
       setSaving(false)
@@ -136,6 +188,36 @@ function DeviceForm() {
       </p>
 
       <form className="card form-card" onSubmit={handleSubmit} noValidate>
+        {!isEdit && (
+          <div className="detect-panel">
+            <div>
+              <p className="detect-title">Adding the computer you’re using now?</p>
+              <p className="field-hint">
+                {canDetect()
+                  ? 'We can fill in its operating system and browser for you. Nothing is saved until you click Save.'
+                  : 'Automatic detection works in Chrome and Edge. In this browser, please fill in the details below.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="button"
+              onClick={handleDetect}
+              disabled={detecting || !canDetect()}
+            >
+              {detecting ? 'Detecting…' : 'Detect this computer'}
+            </button>
+          </div>
+        )}
+
+        {detectMessage && (
+          <p
+            className={`detect-message detect-message-${detectMessage.tone}`}
+            role="status"
+          >
+            {detectMessage.text}
+          </p>
+        )}
+
         <FormField id="name" error={errors.name} label="Device name">
           <input
             id="name"
