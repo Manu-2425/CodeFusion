@@ -209,3 +209,18 @@ Whenever a device or software entry is added, edited or removed, the backend ask
 - it is different from the user's last snapshot.
 
 `GET /api/score-history?days=30` returns the snapshots, oldest first. `days` can be 30, 90 or 365 (default 30). Each snapshot has `overall_score`, `risk_level`, `device_scores` and `created_at`.
+
+## Operating system end-of-life check
+
+`services/endOfLife.js` looks up each device's operating system on [endoflife.date](https://endoflife.date) (configured in `config/sources.json`) and gives the scoring engine an age status:
+
+| Status | Meaning | Points |
+|---|---|---|
+| current | Supported and on the latest update | 0 |
+| outdated | Supported, but a newer update is available (macOS, iOS, iPadOS) | 15 |
+| end_of_life | No longer supported | 30 |
+
+- Checked: macOS, Windows (10 or 11), iOS, iPadOS, Android. ChromeOS and Linux stay "Can't check".
+- Results are cached for 24 hours per operating system (NF6).
+- If endoflife.date can't be reached, the OS stays "Can't check" and the request still succeeds (NF3).
+- For testing, `END_OF_LIFE_API_URL` in `.env` can point to a local copy of the API.

@@ -9,6 +9,7 @@ import {
 } from '../api.js'
 import RiskBadge from '../components/RiskBadge.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
+import { endOfLifeText } from '../endOfLifeText.js'
 import SoftwareTable from '../components/SoftwareTable.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
 import { formatScore, riskClass } from '../risk.js'
@@ -65,6 +66,7 @@ function DeviceDetail() {
           type: info.device_type,
           source: info.source,
           os: `${info.os_name} ${info.os_version}`,
+          osName: info.os_name,
           riskScore: scored ? scored.riskScore : null,
           riskLevel: scored ? scored.riskLevel : "Can't check",
           osRisk: scored ? scored.os : { riskScore: null, riskLevel: "Can't check" },
@@ -171,6 +173,12 @@ function DeviceDetail() {
                   level={device.osRisk.riskLevel}
                 />
               </p>
+              {(() => {
+                const support = endOfLifeText(device.osRisk.endOfLife, device.osName)
+                return support ? (
+                  <p className={`os-support os-support-${support.tone}`}>{support.text}</p>
+                ) : null
+              })()}
 
               <div className="section-header">
                 <h2>Installed software ({device.software.length})</h2>

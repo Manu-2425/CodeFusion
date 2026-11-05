@@ -1,0 +1,15 @@
+{
+  "endOfLife": {
+    "description": "End-of-life dates for operating systems (endoflife.date). Design doc: External data sources, NF9.",
+    "baseUrl": "https://endoflife.date/api",
+    "timeoutMs": 5000,
+    "cacheHours": 24,
+    "products": {
+      "macOS": "macos",
+      "Windows": "windows",
+      "iOS": "ios",
+      "iPadOS": "ipados",
+      "Android": "android"
+    }
+  }
+}

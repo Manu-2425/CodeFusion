@@ -361,7 +361,12 @@ test("Invalid source or browser is rejected and nothing is saved", async () => {
 test("Score history starts empty while scores are Can't check", async () => {
   const cookie = await signUpAndLogIn("dana");
 
-  await call("/api/devices", { method: "POST", body: laptop, cookie });
+  // Linux isn't on endoflife.date, so this device stays "Can't check".
+  await call("/api/devices", {
+    method: "POST",
+    body: { ...laptop, os_name: "Linux", os_version: "6.8" },
+    cookie
+  });
 
   const history = await call("/api/score-history", { cookie });
   assert.equal(history.status, 200);

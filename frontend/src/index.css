@@ -580,3 +580,26 @@ h1 .source-badge {
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
+
+/* Operating system support status (R6) */
+.os-support {
+  margin: -0.25rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.os-support-good {
+  background: #e8f5ec;
+  color: #1f5134;
+}
+
+.os-support-warn {
+  background: #fff4e0;
+  color: #7a4b00;
+}
+
+.os-support-bad {
+  background: #fdecec;
+  color: #8a1c1c;
+}
