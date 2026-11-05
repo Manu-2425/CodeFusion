@@ -8,6 +8,7 @@ import {
   getSoftware
 } from '../api.js'
 import RiskBadge from '../components/RiskBadge.jsx'
+import SourceBadge from '../components/SourceBadge.jsx'
 import SoftwareTable from '../components/SoftwareTable.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
 import { formatScore, riskClass } from '../risk.js'
@@ -27,6 +28,7 @@ function mergeSoftware(software, scoredDevice) {
       name: item.name,
       version: item.version,
       verified: item.match_status === 'verified',
+      source: item.source,
       riskScore: scored ? scored.riskScore : null,
       riskLevel: scored ? scored.riskLevel : "Can't check"
     }
@@ -61,6 +63,7 @@ function DeviceDetail() {
         setDevice({
           name: info.name,
           type: info.device_type,
+          source: info.source,
           os: `${info.os_name} ${info.os_version}`,
           riskScore: scored ? scored.riskScore : null,
           riskLevel: scored ? scored.riskLevel : "Can't check",
@@ -130,6 +133,7 @@ function DeviceDetail() {
           <div className="page-header">
             <h1>
               {device.name} <span className="muted heading-note">{device.type}</span>
+              <SourceBadge source={device.source} />
             </h1>
             <div className="page-actions">
               <Link to={`/devices/${deviceId}/edit`} className="button">

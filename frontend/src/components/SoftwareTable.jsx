@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import RiskBadge from './RiskBadge.jsx'
+import SourceBadge from './SourceBadge.jsx'
 
 function SoftwareTable({ deviceId, software, onRemove }) {
   if (software.length === 0) {
@@ -25,6 +26,7 @@ function SoftwareTable({ deviceId, software, onRemove }) {
             <td>
               {item.name}
               {!item.verified && <span className="muted"> (unverified)</span>}
+              <SourceBadge source={item.source} short />
             </td>
             <td>{item.version}</td>
             <td>{item.verified ? 'Checked' : "Can't check"}</td>
