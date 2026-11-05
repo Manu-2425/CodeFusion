@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import RiskBadge from './RiskBadge.jsx'
+import SourceBadge from './SourceBadge.jsx'
 
 function InventoryTable({ devices }) {
   return (
@@ -23,6 +24,7 @@ function InventoryTable({ devices }) {
             <tr key={device.id}>
               <td>
                 <Link to={`/devices/${device.id}`}>{device.name}</Link>
+                <SourceBadge source={device.source} short />
               </td>
               <td>{device.type}</td>
               <td>{device.os}</td>

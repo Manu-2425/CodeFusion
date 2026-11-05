@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createDevice, getDevices, updateDevice } from '../api.js'
 import FormField from '../components/FormField.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
@@ -21,6 +21,8 @@ function DeviceForm() {
   const { deviceId } = useParams()
   const isEdit = Boolean(deviceId)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const autoDetectDone = useRef(false)
   const [values, setValues] = useState(EMPTY_DEVICE)
   const [loading, setLoading] = useState(isEdit)
   const [loadError, setLoadError] = useState(null)
@@ -105,6 +107,16 @@ function DeviceForm() {
       setDetecting(false)
     }
   }
+
+  // The Dashboard's "Detect this computer" shortcut opens this form with
+  // ?detect=1, which runs detection once as soon as the form loads.
+  useEffect(() => {
+    if (isEdit || autoDetectDone.current) return
+    if (searchParams.get('detect') !== '1' || !canDetect()) return
+
+    autoDetectDone.current = true
+    handleDetect()
+  }, [isEdit, searchParams])
 
   async function handleSubmit(event) {
     event.preventDefault()

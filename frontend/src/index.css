@@ -555,3 +555,28 @@ h1 {
     align-items: stretch;
   }
 }
+
+/* Labels for automatically added entries (DR13) */
+.source-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: #e6f0fb;
+  color: #1d4f8c;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+h1 .source-badge {
+  font-size: 0.8rem;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

@@ -4,6 +4,7 @@ import { getDevices, getRiskScore } from '../api.js'
 import InventoryTable from '../components/InventoryTable.jsx'
 import RiskScoreCard from '../components/RiskScoreCard.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
+import { canDetect } from '../detectDevice.js'
 
 // Device details come from /api/devices and scores from /api/risk-score.
 // risk_score in /api/devices is not calculated yet, so it is not used.
@@ -20,7 +21,8 @@ function mergeInventory(devices, report) {
       os: `${device.os_name} ${device.os_version}`,
       programCount: scored ? scored.software.length : 0,
       riskScore: scored ? scored.riskScore : null,
-      riskLevel: scored ? scored.riskLevel : "Can't check"
+      riskLevel: scored ? scored.riskLevel : "Can't check",
+      source: device.source
     }
   })
 }
@@ -61,8 +63,22 @@ function Dashboard() {
   } else if (inventory.length === 0) {
     content = (
       <StatusMessage title="No devices yet">
-        Add your first device to see your risk score.{' '}
-        <Link to="/devices/new">Add a device</Link>
+        Add your first device to see your risk score.
+        {canDetect() ? (
+          <span className="empty-actions">
+            <Link to="/devices/new?detect=1" className="button button-primary">
+              Detect this computer
+            </Link>
+            <Link to="/devices/new" className="button">
+              Add a device by hand
+            </Link>
+          </span>
+        ) : (
+          <>
+            {' '}
+            <Link to="/devices/new">Add a device</Link>
+          </>
+        )}
       </StatusMessage>
     )
   } else {
