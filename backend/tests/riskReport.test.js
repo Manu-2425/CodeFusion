@@ -35,7 +35,8 @@ test("Report reads the user's inventory and scores it", async () => {
   };
 
   const userId = "11111111-1111-4111-8111-111111111111";
-  const report = await getRiskReport(fakePool, userId);
+  // Stub: no end-of-life data, so operating systems stay "Can't check".
+  const report = await getRiskReport(fakePool, userId, { checkOs: async () => null });
 
   assert.deepEqual(calls, [[userId], [userId]]);
   assert.equal(report.devices.length, 2);
@@ -49,8 +50,37 @@ test("Report reads the user's inventory and scores it", async () => {
 
 test("Empty inventory returns no score", async () => {
   const fakePool = { query: async () => ({ rows: [] }) };
-  const report = await getRiskReport(fakePool, "11111111-1111-4111-8111-111111111111");
+  const report = await getRiskReport(fakePool, "11111111-1111-4111-8111-111111111111", {
+    checkOs: async () => null
+  });
 
   assert.equal(report.riskScore, null);
   assert.equal(report.riskLevel, "Can't check");
+});
+
+test("A checked operating system is scored on its age", async () => {
+  let call = 0;
+  const fakePool = {
+    query: async () => {
+      call += 1;
+      return { rows: call === 1 ? deviceRows : [] };
+    }
+  };
+  const checks = {
+    Windows: { status: "end_of_life", cycle: "10", eolDate: "2025-10-14", latest: null },
+    Android: { status: "current", cycle: "14", eolDate: null, latest: null }
+  };
+
+  const report = await getRiskReport(fakePool, "u1", {
+    checkOs: async osName => checks[osName]
+  });
+
+  // Windows 10 end of life: 0 CVSS + 30 penalty. Android current: 0.
+  assert.equal(report.devices[0].os.riskScore, 30);
+  assert.equal(report.devices[0].os.riskLevel, "Moderate");
+  assert.equal(report.devices[0].os.endOfLife.eolDate, "2025-10-14");
+  assert.equal(report.devices[1].os.riskScore, 0);
+  // Overall: 0.6 x 30 + 0.4 x 15 = 24.
+  assert.equal(report.riskScore, 24);
+  assert.equal(report.riskLevel, "Low");
 });
