@@ -503,3 +503,55 @@ h1 {
   margin-left: auto;
   font-size: 0.9rem;
 }
+
+/* Detect this computer (S4, DR13) */
+.detect-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px dashed #cbd2d9;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.detect-panel .button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.detect-panel .field-hint {
+  margin: 0.2rem 0 0;
+}
+
+.detect-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.detect-message {
+  margin: 0 0 1.25rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.detect-message-success {
+  background: #e8f5ec;
+  color: #1f5134;
+}
+
+.detect-message-info {
+  background: #eef2f7;
+  color: #33404d;
+}
+
+@media (max-width: 560px) {
+  .detect-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

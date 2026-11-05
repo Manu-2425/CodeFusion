@@ -47,6 +47,8 @@ export async function getDevices() {
 }
 
 // Fields: name, device_type, os_name, os_version.
+// Optional for "Detect this computer": source ('detected') and
+// browser ({ name, version }), saved as software on the new device.
 export async function createDevice(fields) {
   const data = await request('/api/devices', { method: 'POST', body: fields })
   return data.device
